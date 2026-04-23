@@ -1,0 +1,112 @@
+1. Estructura de Carpetas
+Primero, organiza tu proyecto de la siguiente manera:
+
+/tu-proyecto
+|-- /server
+|   |-- usuarios.js
+|   |-- sucursales.js
+|   |-- proveedores.js
+|   |-- productos.js
+|   |-- inventarios.js
+|   |-- carritos.js
+|   |-- listas.js
+|   |-- ventas.js
+|-- index.js
+
+2. Crear Archivos de Rutas
+Cada archivo de ruta contendrá la lógica para su respectivo grupo. Por ejemplo, usuarios.js podría verse así:
+
+// routes/usuarios.js
+const express = require('express');
+const router = express.Router();
+const db = require('../db'); // Asegúrate de tener un archivo para manejar la conexión a la base de datos
+
+// Crear usuario
+router.post('/crearUsuario', (req, res) => {
+  const { estatus, tipo, clave, nombre, fechaNacimiento, genero, telefono, correo, domicilio } = req.body;
+
+  db.query(
+    "INSERT INTO tusuarios (estatus, tipo, clave, nombre, fechaNacimiento, genero, telefono, correo, domicilio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [estatus, tipo, clave, nombre, fechaNacimiento, genero, telefono, correo, domicilio],
+    (err, result) => {
+      if (err) return res.status(500).send(err);
+      res.send(result);
+    }
+  );
+});
+
+// Otras rutas (verUsuario, editarUsuario, eliminarUsuario, etc.) aquí...
+
+module.exports = router;
+
+3. Conectar Rutas en index.js
+En tu archivo index.js, importa y usa estas rutas:
+
+// index.js
+const express = require("express");
+const mysql = require("mysql");
+const cors = require("cors");
+const fileUpload = require("express-fileupload");
+const path = require("path");
+const bodyParser = require("body-parser");
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(bodyParser.json());
+app.use(fileUpload());
+
+// Rutas
+const usuariosRoutes = require('./routes/usuarios');
+const sucursalesRoutes = require('./routes/sucursales');
+const proveedoresRoutes = require('./routes/proveedores');
+const productosRoutes = require('./routes/productos');
+const inventariosRoutes = require('./routes/inventarios');
+const carritosRoutes = require('./routes/carritos');
+const listasRoutes = require('./routes/listas');
+const ventasRoutes = require('./routes/ventas');
+
+// Usar rutas
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/sucursales', sucursalesRoutes);
+app.use('/api/proveedores', proveedoresRoutes);
+app.use('/api/productos', productosRoutes);
+app.use('/api/inventarios', inventariosRoutes);
+app.use('/api/carritos', carritosRoutes);
+app.use('/api/listas', listasRoutes);
+app.use('/api/ventas', ventasRoutes);
+
+// Conexión a la base de datos y arranque del servidor
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+// Asegúrate de tener la conexión a la base de datos en un archivo separado
+
+4. Manejo de Conexión a la Base de Datos
+Crea un archivo db.js para manejar la conexión a la base de datos:
+
+// db.js
+const mysql = require('mysql');
+
+const db = mysql.createConnection({
+  host: "127.0.0.1",
+  user: "root",
+  password: "",
+  database: "server",
+});
+
+db.connect(err => {
+  if (err) {
+    console.error("Error conectando a la base de datos:", err);
+  } else {
+    console.log("Conectado correctamente a la base de datos!");
+  }
+});
+
+module.exports = db;
+
+
