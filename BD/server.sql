@@ -87,6 +87,7 @@ CREATE TABLE `tlista` (
   `inventario` int NOT NULL,
   `usuario` int NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_tlista_usuario_inventario` (`usuario`,`inventario`),
   KEY `idUsuario_idx` (`usuario`),
   KEY `idInventario_idx` (`inventario`),
   CONSTRAINT `idInventario` FOREIGN KEY (`inventario`) REFERENCES `tinventario` (`id`),
@@ -100,7 +101,7 @@ CREATE TABLE `tlista` (
 
 LOCK TABLES `tlista` WRITE;
 /*!40000 ALTER TABLE `tlista` DISABLE KEYS */;
-INSERT INTO `tlista` VALUES (2,1,3),(3,1,3),(4,1,5);
+INSERT INTO `tlista` VALUES (2,1,3),(4,1,5);
 /*!40000 ALTER TABLE `tlista` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -159,6 +160,11 @@ CREATE TABLE `tpagos` (
   `envio` decimal(10,2) NOT NULL DEFAULT '0.00',
   `total` decimal(10,2) NOT NULL DEFAULT '0.00',
   `proveedor` varchar(60) DEFAULT NULL,
+  `direccionEntrega` json DEFAULT NULL,
+  `estadoEntrega` varchar(30) NOT NULL DEFAULT 'preparando',
+  `fechaEstimadaEntrega` date DEFAULT NULL,
+  `guiaEntrega` varchar(120) DEFAULT NULL,
+  `notasEntrega` varchar(500) DEFAULT NULL,
   `metadata` json DEFAULT NULL,
   `fechaRegistro` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -175,7 +181,7 @@ CREATE TABLE `tpagos` (
 
 LOCK TABLES `tpagos` WRITE;
 /*!40000 ALTER TABLE `tpagos` DISABLE KEYS */;
-INSERT INTO `tpagos` VALUES (1,5,'efectivo','pagado',NULL,123.00,19.68,50.00,192.68,NULL,'{\"origen\": \"procesarCompra\", \"productos\": 1}','2026-04-23 21:17:34','2026-04-23 21:17:34'),(2,5,'efectivo','pagado',NULL,55623.00,8899.68,50.00,64572.68,NULL,'{\"origen\": \"procesarCompra\", \"productos\": 2}','2026-04-23 21:17:59','2026-04-23 21:17:59');
+INSERT INTO `tpagos` VALUES (1,5,'efectivo','pagado',NULL,123.00,19.68,50.00,192.68,NULL,NULL,'preparando',NULL,NULL,NULL,'{\"origen\": \"procesarCompra\", \"productos\": 1}','2026-04-23 21:17:34','2026-04-23 21:17:34'),(2,5,'efectivo','pagado',NULL,55623.00,8899.68,50.00,64572.68,NULL,NULL,'preparando',NULL,NULL,NULL,'{\"origen\": \"procesarCompra\", \"productos\": 2}','2026-04-23 21:17:59','2026-04-23 21:17:59');
 /*!40000 ALTER TABLE `tpagos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -242,6 +248,27 @@ INSERT INTO `tproductos` VALUES (1,1,'Tabla de Picar','es una linda tabla de pic
 UNLOCK TABLES;
 
 --
+-- Table structure for table `tproducto_imagenes`
+--
+
+DROP TABLE IF EXISTS `tproducto_imagenes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tproducto_imagenes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `producto` int NOT NULL,
+  `ruta` varchar(500) NOT NULL,
+  `nombreOriginal` varchar(255) DEFAULT NULL,
+  `esPrincipal` tinyint NOT NULL DEFAULT '0',
+  `orden` int NOT NULL DEFAULT '0',
+  `fechaRegistro` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tproducto_imagenes_producto` (`producto`),
+  KEY `idx_tproducto_imagenes_orden` (`orden`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `tproveedores`
 --
 
@@ -285,6 +312,8 @@ CREATE TABLE `tsucursales` (
   `nombre` varchar(45) NOT NULL,
   `telefono` varchar(10) NOT NULL,
   `direccion` varchar(450) NOT NULL,
+  `latitud` decimal(10,8) DEFAULT NULL,
+  `longitud` decimal(11,8) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -295,7 +324,7 @@ CREATE TABLE `tsucursales` (
 
 LOCK TABLES `tsucursales` WRITE;
 /*!40000 ALTER TABLE `tsucursales` DISABLE KEYS */;
-INSERT INTO `tsucursales` VALUES (1,1,1,'Sucursal Plaza Antea','4429876543','Blvd. Bernardo Quintana 9800, Local 45, Querétaro, Qro.'),(2,1,4,'Sucursal Centro Querétaro','4421234567','Av. Zaragoza #120, Col. Centro, Querétaro, Qro.'),(4,1,4,'Sucursal Juriquilla','4425567788','Av. de la República #350, Juriquilla, Querétaro');
+INSERT INTO `tsucursales` VALUES (1,1,1,'Sucursal Plaza Antea','4429876543','Blvd. Bernardo Quintana 9800, Local 45, Querétaro, Qro.',20.67383200,-100.43727100),(2,1,4,'Sucursal Centro Querétaro','4421234567','Av. Zaragoza #120, Col. Centro, Querétaro, Qro.',20.59213200,-100.39283200),(4,1,4,'Sucursal Juriquilla','4425567788','Av. de la República #350, Juriquilla, Querétaro',20.70809400,-100.44732600);
 /*!40000 ALTER TABLE `tsucursales` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -317,6 +346,13 @@ CREATE TABLE `tusuarios` (
   `telefono` varchar(10) NOT NULL,
   `correo` varchar(45) NOT NULL,
   `domicilio` varchar(450) NOT NULL,
+  `ciudad` varchar(120) DEFAULT NULL,
+  `estadoDireccion` varchar(120) DEFAULT NULL,
+  `codigoPostal` varchar(10) DEFAULT NULL,
+  `referenciasDomicilio` varchar(500) DEFAULT NULL,
+  `latitud` decimal(10,8) DEFAULT NULL,
+  `longitud` decimal(11,8) DEFAULT NULL,
+  `fotoPerfil` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -327,7 +363,7 @@ CREATE TABLE `tusuarios` (
 
 LOCK TABLES `tusuarios` WRITE;
 /*!40000 ALTER TABLE `tusuarios` DISABLE KEYS */;
-INSERT INTO `tusuarios` VALUES (1,1,1,'$2b$10$loTw8thmPvp6pU2seyf.k.azmAmI57/wNg80YHnxPeW/fh4qyJP9u','Martin Larios','2000-12-12','MASCULINO','4421781565','admin@gmail.com','UTEQ'),(2,0,2,'$2b$10$IYbKpp2HKQWhLbm8OAJt7uGS6dwpuZGRsrNvOB9uq.jgdhZQv5I4u','lilo','12/12/12','FEMENINO','123467890','lilith@gmail.com','biombo'),(3,1,2,'$2b$10$mmEkb/hFJ/lSsjldYOy2Z.2P8xp42yyh3QWjb5RA1Ff1DX24wQKVq','Andreww','2026-04-08','FEMENINO','1234567890','pandred25@gmail.com','DEL BIOMBO'),(4,1,1,'$2b$10$EPk8H7VZ9M2.CvR.H2AgoutQhdMWuK4mT0VAlXMnmaH3rgBGJKoga','Lilith Argueta','2004-12-18','FEMENINO','4421781565','lilithargueta@gmail.com','DEL BIOMBO'),(5,1,2,'$2b$10$aU1lqmUsDiqnpzn68DxPheq3P0PRYUHomL.JK/cViKbxd152zJe6O','Flor Andrade','2009-02-05','FEMENINO','4421781565','pandred27@gmail.com','Calle de la Patria');
+INSERT INTO `tusuarios` (`id`,`estatus`,`tipo`,`clave`,`nombre`,`fechaNacimiento`,`genero`,`telefono`,`correo`,`domicilio`,`ciudad`,`estadoDireccion`,`codigoPostal`,`referenciasDomicilio`,`latitud`,`longitud`,`fotoPerfil`) VALUES (1,1,1,'$2b$10$loTw8thmPvp6pU2seyf.k.azmAmI57/wNg80YHnxPeW/fh4qyJP9u','Martin Larios','2000-12-12','MASCULINO','4421781565','admin@gmail.com','UTEQ',NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,0,2,'$2b$10$IYbKpp2HKQWhLbm8OAJt7uGS6dwpuZGRsrNvOB9uq.jgdhZQv5I4u','lilo','12/12/12','FEMENINO','123467890','lilith@gmail.com','biombo',NULL,NULL,NULL,NULL,NULL,NULL,NULL),(3,1,2,'$2b$10$mmEkb/hFJ/lSsjldYOy2Z.2P8xp42yyh3QWjb5RA1Ff1DX24wQKVq','Andreww','2026-04-08','FEMENINO','1234567890','pandred25@gmail.com','DEL BIOMBO',NULL,NULL,NULL,NULL,NULL,NULL,NULL),(4,1,1,'$2b$10$EPk8H7VZ9M2.CvR.H2AgoutQhdMWuK4mT0VAlXMnmaH3rgBGJKoga','Lilith Argueta','2004-12-18','FEMENINO','4421781565','lilithargueta@gmail.com','DEL BIOMBO',NULL,NULL,NULL,NULL,NULL,NULL,NULL),(5,1,2,'$2b$10$aU1lqmUsDiqnpzn68DxPheq3P0PRYUHomL.JK/cViKbxd152zJe6O','Flor Andrade','2009-02-05','FEMENINO','4421781565','pandred27@gmail.com','Calle de la Patria',NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `tusuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 

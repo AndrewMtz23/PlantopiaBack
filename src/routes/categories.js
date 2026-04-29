@@ -1,63 +1,19 @@
-const express = require("express");
-const { authenticateToken, requireAdmin } = require("../middleware/auth");
+const express = require('express');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const CategoryController = require('../controllers/CategoryController');
 
 const createCategoryRoutes = (db) => {
   const router = express.Router();
 
-  // GET: Todas las categorias (público para poder listar en frontend)
-  router.get("/categorias", (req, res) => {
-    db.query("SELECT * FROM tcategorias", (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).send("Error al obtener categorias");
-      }
-      res.send(result);
-    });
-  });
+  router.get('/categorias', CategoryController.getAllCategories);
+  router.post('/crearCategoria', authenticateToken, requireAdmin, CategoryController.createCategory);
+  router.put('/editarCategoria', authenticateToken, requireAdmin, CategoryController.updateLegacyCategory);
+  router.delete('/eliminarCategoria/:id(\\d+)', authenticateToken, requireAdmin, CategoryController.deleteCategory);
 
-  // POST: Crear categoria (Solo admin)
-  router.post("/crearCategoria", authenticateToken, requireAdmin, (req, res) => {
-    const { nombre, descripcion } = req.body;
-    db.query(
-      "INSERT INTO tcategorias(nombre, descripcion) VALUES(?, ?)",
-      [nombre, descripcion || ""],
-      (err, result) => {
-        if (err) {
-          console.log(err);
-          return res.status(500).send("Error al crear categoria");
-        }
-        res.send(result);
-      }
-    );
-  });
-
-  // PUT: Editar categoria (Solo admin)
-  router.put("/editarCategoria", authenticateToken, requireAdmin, (req, res) => {
-    const { id, nombre, descripcion } = req.body;
-    db.query(
-      "UPDATE tcategorias SET nombre=?, descripcion=? WHERE id=?",
-      [nombre, descripcion || "", id],
-      (err, result) => {
-        if (err) {
-          console.log(err);
-          return res.status(500).send("Error al editar categoria");
-        }
-        res.send(result);
-      }
-    );
-  });
-
-  // DELETE: Eliminar categoria (Solo admin)
-  router.delete("/eliminarCategoria/:id", authenticateToken, requireAdmin, (req, res) => {
-    const { id } = req.params;
-    db.query("DELETE FROM tcategorias WHERE id = ?", [id], (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).send("Error al eliminar categoria");
-      }
-      res.send(result);
-    });
-  });
+  router.post('/categorias', authenticateToken, requireAdmin, CategoryController.createCategory);
+  router.get('/categorias/:id(\\d+)', CategoryController.getCategoryById);
+  router.put('/categorias/:id(\\d+)', authenticateToken, requireAdmin, CategoryController.updateCategory);
+  router.delete('/categorias/:id(\\d+)', authenticateToken, requireAdmin, CategoryController.deleteCategory);
 
   return router;
 };

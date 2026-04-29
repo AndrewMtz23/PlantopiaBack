@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model tcategorias {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @unique(map: "nombre") @db.VarChar(100)
+  slug        String?  @unique(map: "slug") @db.VarChar(100)
+  descripcion String?  @default("") @db.VarChar(255)
+  icon        String?  @db.VarChar(50)
+  color       String?  @db.VarChar(20)
+  isActive    Int      @default(1)
+  createdAt   DateTime @default(now()) @db.Timestamp(0)
+}
+
+model tinventario {
+  id           Int          @id @default(autoincrement())
+  estatus      Int
+  sucursal     Int
+  proveedor    Int
+  producto     Int
+  cantidad     Int
+  tproductos   tproductos   @relation(fields: [producto], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "producto")
+  tproveedores tproveedores @relation(fields: [proveedor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "proveedor")
+  tsucursales  tsucursales  @relation(fields: [sucursal], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sucursal")
+  tlista       tlista[]
+  tpedido      tpedido[]
+
+  @@index([producto], map: "producto_idx")
+  @@index([proveedor], map: "proveedor_idx")
+  @@index([sucursal], map: "sucursal_idx")
+}
+
+model tlista {
+  id          Int         @id @default(autoincrement())
+  inventario  Int
+  usuario     Int
+  tinventario tinventario @relation(fields: [inventario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "idInventario")
+  tusuarios   tusuarios   @relation(fields: [usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "idUsuario")
+
+  @@unique([usuario, inventario], map: "uniq_tlista_usuario_inventario")
+  @@index([inventario], map: "idInventario_idx")
+  @@index([usuario], map: "idUsuario_idx")
+}
+
+model tlogs {
+  id            Int      @id @default(autoincrement())
+  usuario       Int?
+  modulo        String   @db.VarChar(60)
+  accion        String   @db.VarChar(80)
+  descripcion   String   @db.VarChar(255)
+  entidad       String?  @db.VarChar(60)
+  entidadId     Int?
+  nivel         String   @default("info") @db.VarChar(20)
+  ip            String?  @db.VarChar(80)
+  metadata      Json?
+  fechaRegistro DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([entidad], map: "idx_tlogs_entidad")
+  @@index([fechaRegistro], map: "idx_tlogs_fecha")
+  @@index([modulo], map: "idx_tlogs_modulo")
+  @@index([usuario], map: "idx_tlogs_usuario")
+}
+
+model tpagos {
+  id                   Int       @id @default(autoincrement())
+  usuario              Int
+  metodo               String    @default("efectivo") @db.VarChar(40)
+  estado               String    @default("pagado") @db.VarChar(30)
+  referencia           String?   @db.VarChar(120)
+  subtotal             Decimal   @default(0.00) @db.Decimal(10, 2)
+  iva                  Decimal   @default(0.00) @db.Decimal(10, 2)
+  envio                Decimal   @default(0.00) @db.Decimal(10, 2)
+  total                Decimal   @default(0.00) @db.Decimal(10, 2)
+  proveedor            String?   @db.VarChar(60)
+  direccionEntrega     Json?
+  estadoEntrega        String    @default("preparando") @db.VarChar(30)
+  fechaEstimadaEntrega DateTime? @db.Date
+  guiaEntrega          String?   @db.VarChar(120)
+  notasEntrega         String?   @db.VarChar(500)
+  repartidorId         Int?      // ID del usuario tipo 4 (Repartidor)
+  metadata             Json?
+  fechaRegistro        DateTime  @default(now()) @db.Timestamp(0)
+  fechaActualizacion   DateTime  @default(now()) @db.Timestamp(0)
+
+  @@index([estado], map: "idx_tpagos_estado")
+  @@index([metodo], map: "idx_tpagos_metodo")
+  @@index([usuario], map: "idx_tpagos_usuario")
+}
+
+model tpedido {
+  id          Int         @id @default(autoincrement())
+  inventario  Int
+  usuario     Int
+  cantidad    Int
+  subtotal    Float
+  tinventario tinventario @relation(fields: [inventario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "inventario")
+  tusuarios   tusuarios   @relation(fields: [usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "usuario")
+
+  @@index([inventario], map: "inventario_idx")
+  @@index([usuario], map: "usuario_idx")
+}
+
+model tproducto_imagenes {
+  id             Int      @id @default(autoincrement())
+  producto       Int
+  ruta           String   @db.VarChar(500)
+  nombreOriginal String?  @db.VarChar(255)
+  esPrincipal    Int      @default(0) @db.SmallInt
+  orden          Int      @default(0)
+  fechaRegistro  DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([orden], map: "idx_tproducto_imagenes_orden")
+  @@index([producto], map: "idx_tproducto_imagenes_producto")
+}
+
+model tproductos {
+  id           Int           @id @default(autoincrement())
+  estatus      Int
+  nombre       String        @db.VarChar(45)
+  detalles     String        @db.VarChar(450)
+  categoria    String        @db.VarChar(45)
+  precioCompra Float
+  precioVenta  Float
+  imagen       String        @db.VarChar(450)
+  imagenUrl    String?       @db.VarChar(500)
+  tinventario  tinventario[]
+  tventas      tventas[]
+}
+
+model tproveedores {
+  id            Int           @id @default(autoincrement())
+  estatus       Int
+  marca         String        @db.VarChar(45)
+  representante String        @db.VarChar(45)
+  telefono      String        @db.VarChar(10)
+  correo        String        @db.VarChar(45)
+  direccion     String        @db.VarChar(450)
+  fechaContrato String        @db.VarChar(10)
+  tinventario   tinventario[]
+}
+
+model tsucursales {
+  id          Int           @id @default(autoincrement())
+  estatus     Int
+  gerente     Int
+  nombre      String        @db.VarChar(45)
+  telefono    String        @db.VarChar(10)
+  direccion   String        @db.VarChar(450)
+  latitud     Decimal?      @db.Decimal(10, 8)
+  longitud    Decimal?      @db.Decimal(11, 8)
+  tinventario tinventario[]
+}
+
+model tusuarios {
+  id                   Int       @id @default(autoincrement())
+  estatus              Int
+  tipo                 Int
+  clave                String    @db.VarChar(255)
+  nombre               String    @db.VarChar(45)
+  fechaNacimiento      String    @db.VarChar(10)
+  genero               String    @db.VarChar(45)
+  telefono             String    @db.VarChar(10)
+  correo               String    @db.VarChar(45)
+  domicilio            String    @db.VarChar(450)
+  ciudad               String?   @db.VarChar(120)
+  estadoDireccion      String?   @db.VarChar(120)
+  codigoPostal         String?   @db.VarChar(10)
+  referenciasDomicilio String?   @db.VarChar(500)
+  latitud              Decimal?  @db.Decimal(10, 8)
+  longitud             Decimal?  @db.Decimal(11, 8)
+  fotoPerfil           String?   @db.VarChar(500)
+  tlista               tlista[]
+  tpedido              tpedido[]
+  tventas              tventas[]
+}
+
+model tventas {
+  id            Int        @id @default(autoincrement())
+  usuario       Int
+  pago          Int?
+  producto      Int
+  cantidad      Int
+  total         Float
+  fechaRegistro DateTime?  @default(now()) @db.Timestamp(0)
+  tusuarios     tusuarios  @relation(fields: [usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "idCliente")
+  tproductos    tproductos @relation(fields: [producto], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_idProducto")
+
+  @@index([producto], map: "idProducto")
+  @@index([usuario], map: "id_usuario_idx")
+}

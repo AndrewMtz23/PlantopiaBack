@@ -1,45 +1,78 @@
-# Plantopia Backend API 🌱 🚀
+# Plantopia Backend API
 
-Este es el repositorio del servidor (Backend) para el proyecto **Plantopia**, un sistema E-commerce especializado en la venta de plantas y productos botánicos.
+Backend de Plantopia para la version **PostgreSQL + Prisma**. Esta rama (`PlantopiaWithPostgreSQL`) conserva la migracion desde la version original con MySQL y centraliza el acceso a datos mediante Prisma Client.
 
-> [!NOTE]
-> **Proyecto Académico**: Este repositorio forma parte de un proyecto escolar desarrollado para aprender y aplicar tecnologías de desarrollo web moderno.
+## Stack
 
-## 🛠️ Tecnologías Utilizadas
+- Node.js
+- Express
+- PostgreSQL
+- Prisma ORM
+- JWT
+- bcryptjs
+- Multer para carga de imagenes
 
-- **Node.js**: Entorno de ejecución para JavaScript.
-- **Express**: Framework para la creación de APIs REST.
-- **MySQL / MySQL2**: Sistema de gestión de bases de datos.
-- **JWT**: Autenticación segura mediante tokens.
-- **Bcryptjs**: Encriptación de contraseñas.
-- **Railway**: Plataforma de despliegue y base de datos en producción.
+## Variables De Entorno
 
-## 📋 Características
+Crea un archivo `.env` en la raiz del backend usando `.env.example` como base:
 
-- Autenticación de usuarios (Clientes y Administradores).
-- Gestión de productos, categorías y sucursales.
-- Sistema de logs de actividad para auditoría.
-- Procesamiento de pagos (simulado/integrado).
-- Carga de imágenes local segura.
+```env
+PORT=3001
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_EXPIRES_IN=8h
 
-## 🚀 Instalación y Uso Local
+# Solo para scripts legacy/migracion desde MySQL
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=replace-with-your-password
+DB_NAME=server
+DB_PORT=3306
+DB_CONNECTION_LIMIT=10
 
-1. Clona este repositorio.
-2. Instala las dependencias:
-   ```bash
-   npm install
-   ```
-3. Configura tu archivo `.env` con las credenciales de tu base de datos (puedes usar `.env.example` como base).
-4. Inicia el servidor:
-   ```bash
-   npm start
-   ```
+PUBLIC_PATH=
+UPLOADS_PATH=
+```
 
-El servidor correrá por defecto en el puerto `3001`.
+Notas:
 
-## 🌐 Despliegue
+- `DATABASE_URL` es obligatoria para Prisma/PostgreSQL.
+- `JWT_SECRET` es obligatorio. El servidor no usa un secreto hardcodeado.
+- Las variables `DB_*` solo son necesarias si ejecutas scripts legacy de MySQL o migracion.
+- `PUBLIC_PATH` y `UPLOADS_PATH` son opcionales; si no se configuran, se usan las carpetas locales del proyecto.
 
-Este backend está diseñado para ser desplegado en **Railway**. Asegúrate de configurar las variables de entorno correspondientes en el panel de control de Railway.
+## Instalacion Local
 
----
-© 2026 - Proyecto Plantopia
+```bash
+npm install
+npx prisma generate
+npx prisma db push
+npm start
+```
+
+Para desarrollo puedes usar:
+
+```bash
+npm run dev
+```
+
+Si `nodemon` falla en Windows por permisos, ejecuta temporalmente:
+
+```bash
+node index.js
+```
+
+## Base De Datos
+
+Esta version usa PostgreSQL como base principal. Prisma toma el esquema desde:
+
+```text
+prisma/schema.prisma
+```
+
+El archivo `BD/server.sql` queda como referencia historica de la version MySQL.
+
+## Rama
+
+- `main`: version original.
+- `PlantopiaWithPostgreSQL`: version migrada a PostgreSQL + Prisma.

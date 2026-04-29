@@ -1,29 +1,26 @@
-const { app, db, port } = require("./src/app");
-const {
-  ensurePaymentAndLogTables,
-  ensureProductImageColumns,
-  ensureUserPasswordColumn,
-} = require("./src/db/ensureSchema");
+const { app, port } = require("./src/app");
+const prisma = require("./src/config/prisma");
+const { syncAutoIncrementSequences } = require("./src/utils/sequences");
 
-db.getConnection(async (err, connection) => {
-  if (err) {
-    console.log(err);
-    process.exit(1);
-  }
-
+async function startServer() {
   try {
-    console.log("Conectado correctamente a la base de datos!!!");
-    connection.release();
+    // Validamos la conexión con Prisma/PostgreSQL antes de iniciar el servidor
+    await prisma.$connect();
+    console.log("✅ Conectado correctamente a PostgreSQL mediante Prisma Client.");
 
-    await ensureUserPasswordColumn(db);
-    await ensureProductImageColumns(db);
-    await ensurePaymentAndLogTables(db);
+    const sequenceStatus = await syncAutoIncrementSequences();
+    console.log(`Secuencias sincronizadas: ${sequenceStatus.synced}`);
 
     app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
+      console.log(`🚀 Servidor corriendo en el puerto ${port}`);
+      console.log(`🔗 Local: http://localhost:${port}`);
     });
-  } catch (schemaError) {
-    console.log(schemaError);
+  } catch (error) {
+    console.error("❌ Error al conectar con la base de datos:");
+    console.error(error);
     process.exit(1);
   }
-});
+}
+
+// Ya no necesitamos las funciones 'ensureSchema' porque Prisma maneja la integridad del esquema
+startServer();

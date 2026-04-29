@@ -1,126 +1,121 @@
-const express = require("express");
-const { authenticateToken, requireAdmin } = require("../middleware/auth");
+const express = require('express');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const CommerceService = require('../services/CommerceService');
 
 const createPaymentRoutes = (db) => {
   const router = express.Router();
 
-  router.get("/verPagos", authenticateToken, requireAdmin, (req, res) => {
-    const query = `
-      SELECT
-        tp.id,
-        tp.usuario,
-        tu.nombre AS usuario_nombre,
-        tu.correo AS usuario_correo,
-        tp.metodo,
-        tp.estado,
-        tp.referencia,
-        tp.subtotal,
-        tp.iva,
-        tp.envio,
-        tp.total,
-        tp.proveedor,
-        tp.fechaRegistro,
-        tp.fechaActualizacion,
-        COUNT(tv.id) AS productos,
-        COALESCE(SUM(tv.cantidad), 0) AS unidades
-      FROM tpagos tp
-      LEFT JOIN tusuarios tu ON tp.usuario = tu.id
-      LEFT JOIN tventas tv ON tv.pago = tp.id
-      GROUP BY
-        tp.id,
-        tp.usuario,
-        tu.nombre,
-        tu.correo,
-        tp.metodo,
-        tp.estado,
-        tp.referencia,
-        tp.subtotal,
-        tp.iva,
-        tp.envio,
-        tp.total,
-        tp.proveedor,
-        tp.fechaRegistro,
-        tp.fechaActualizacion
-      ORDER BY tp.fechaRegistro DESC
-    `;
+  const buildPaymentDetail = async (prisma, pagoId, userId = null) => {
+    const where = { id: Number(pagoId) };
+    if (userId) where.usuario = Number(userId);
 
-    db.query(query, (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: "No se pudieron obtener los pagos." });
-      }
+    const pago = await prisma.tpagos.findFirst({ where });
+    if (!pago) return null;
 
-      res.json(result);
-    });
+    const [usuario, ventas] = await Promise.all([
+      prisma.tusuarios.findUnique({ where: { id: Number(pago.usuario) } }),
+      prisma.tventas.findMany({
+        where: { pago: Number(pago.id) },
+        include: { tproductos: true },
+        orderBy: { id: 'asc' }
+      })
+    ]);
+
+    const pagoPlano = {
+      ...pago,
+      usuario_nombre: usuario?.nombre,
+      usuario_correo: usuario?.correo,
+      usuario_telefono: usuario?.telefono,
+      usuario_domicilio: usuario?.domicilio,
+    };
+
+    const items = ventas.map((venta) => ({
+      ...venta,
+      nombre: venta.tproductos?.nombre,
+      detalles: venta.tproductos?.detalles,
+      categoria: venta.tproductos?.categoria,
+      imagen: venta.tproductos?.imagen,
+      imagenUrl: venta.tproductos?.imagenUrl,
+      precioVenta: venta.tproductos?.precioVenta,
+    }));
+
+    return { pago: pagoPlano, items };
+  };
+
+  router.get('/verPagos', authenticateToken, requireAdmin, async (req, res) => {
+    const prisma = require('../config/prisma');
+    try {
+      const pagos = await prisma.tpagos.findMany({ orderBy: { fechaRegistro: 'desc' } });
+      const enriched = await CommerceService.attachPaymentRelations(pagos, { includeSales: true });
+      res.json(enriched.map((pago) => ({
+        ...pago,
+        usuario_nombre: pago.tusuarios?.nombre,
+        usuario_correo: pago.tusuarios?.correo,
+        productos: pago.tventas?.length || 0,
+        unidades: (pago.tventas || []).reduce((sum, item) => sum + Number(item.cantidad || 0), 0),
+      })));
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
-  router.get("/verPago/:id", authenticateToken, requireAdmin, async (req, res) => {
-    const pagoId = Number(req.params.id);
-
-    if (!Number.isFinite(pagoId)) {
-      return res.status(400).json({ error: "Id de pago invalido." });
-    }
-
+  router.get('/verPago/:id(\\d+)', authenticateToken, requireAdmin, async (req, res) => {
+    const prisma = require('../config/prisma');
     try {
-      const [paymentRows] = await db.promise().query(
-        `
-          SELECT
-            tp.*,
-            tu.nombre AS usuario_nombre,
-            tu.correo AS usuario_correo,
-            tu.telefono AS usuario_telefono,
-            tu.domicilio AS usuario_domicilio
-          FROM tpagos tp
-          LEFT JOIN tusuarios tu ON tp.usuario = tu.id
-          WHERE tp.id = ?
-          LIMIT 1
-        `,
-        [pagoId]
-      );
+      const detail = await buildPaymentDetail(prisma, req.params.id);
+      if (!detail) return res.status(404).json({ error: 'Pago no encontrado' });
+      res.json(detail);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
 
-      if (!paymentRows.length) {
-        return res.status(404).json({ error: "Pago no encontrado." });
-      }
-
-      const [itemRows] = await db.promise().query(
-        `
-          SELECT
-            tv.id,
-            tv.producto,
-            tv.cantidad,
-            tv.total,
-            tv.fechaRegistro,
-            tp.nombre,
-            tp.detalles,
-            tp.categoria,
-            tp.imagen,
-            tp.imagenUrl
-          FROM tventas tv
-          LEFT JOIN tproductos tp ON tv.producto = tp.id
-          WHERE tv.pago = ?
-          ORDER BY tv.id ASC
-        `,
-        [pagoId]
-      );
-
-      const [logRows] = await db.promise().query(
-        `
-          SELECT id, usuario, modulo, accion, descripcion, entidad, entidadId, nivel, ip, metadata, fechaRegistro
-          FROM tlogs
-          WHERE entidad = 'tpagos' AND entidadId = ?
-          ORDER BY fechaRegistro DESC
-        `,
-        [pagoId]
-      );
-
-      res.json({
-        pago: paymentRows[0],
-        items: itemRows,
-        logs: logRows,
+  router.get('/misPagos/:usuario(\\d+)', authenticateToken, async (req, res) => {
+    const prisma = require('../config/prisma');
+    try {
+      const pagos = await prisma.tpagos.findMany({
+        where: { usuario: Number(req.params.usuario) },
+        orderBy: { fechaRegistro: 'desc' }
       });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "No se pudo obtener el detalle del pago." });
+      const enriched = await CommerceService.attachPaymentRelations(pagos, { includeSales: true });
+      res.json(enriched.map((pago) => ({
+        ...pago,
+        productos: pago.tventas?.length || 0,
+        unidades: (pago.tventas || []).reduce((sum, item) => sum + Number(item.cantidad || 0), 0),
+      })));
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.get('/miPago/:usuario(\\d+)/:id(\\d+)', authenticateToken, async (req, res) => {
+    const prisma = require('../config/prisma');
+    try {
+      const detail = await buildPaymentDetail(prisma, req.params.id, req.params.usuario);
+      if (!detail) return res.status(404).json({ error: 'Pago no encontrado' });
+      res.json(detail);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.put('/actualizarSeguimientoPago/:id(\\d+)', authenticateToken, requireAdmin, async (req, res) => {
+    const prisma = require('../config/prisma');
+    try {
+      const { estadoEntrega, fechaEstimadaEntrega, guiaEntrega, notasEntrega } = req.body;
+      const seguimiento = await prisma.tpagos.update({
+        where: { id: Number(req.params.id) },
+        data: {
+          estadoEntrega,
+          fechaEstimadaEntrega: fechaEstimadaEntrega ? new Date(`${fechaEstimadaEntrega}T00:00:00`) : null,
+          guiaEntrega: guiaEntrega || null,
+          notasEntrega: notasEntrega || null,
+          fechaActualizacion: new Date(),
+        }
+      });
+      res.json({ seguimiento });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   });
 

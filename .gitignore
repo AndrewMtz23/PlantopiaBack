@@ -9,6 +9,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # Uploads (Ignorar imágenes subidas, pero mantener la carpeta)
 /public/images/*
@@ -17,3 +18,5 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+/src/generated/prisma

@@ -1,0 +1,3 @@
+ALTER TABLE "tusuarios"
+  ADD COLUMN IF NOT EXISTS "latitud" DECIMAL(10,8),
+  ADD COLUMN IF NOT EXISTS "longitud" DECIMAL(11,8);

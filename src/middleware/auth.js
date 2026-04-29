@@ -25,10 +25,24 @@ const authenticateToken = (req, res, next) => {
 
 const requireAdmin = (req, res, next) => {
   if (Number(req.auth?.tipo) !== 1) {
-    return res.status(403).json({ error: "No tienes permisos para realizar esta accion." });
+    return res.status(403).json({ error: "No tienes permisos de administrador." });
   }
 
   return next();
+};
+
+/**
+ * Middleware para autorizar múltiples roles
+ * @param {Array<number>} allowedRoles - Lista de tipos permitidos (1: Admin, 2: Cliente, 3: Empleado, 4: Repartidor)
+ */
+const authorizeRole = (allowedRoles = []) => (req, res, next) => {
+  const userType = Number(req.auth?.tipo);
+
+  if (allowedRoles.includes(userType)) {
+    return next();
+  }
+
+  return res.status(403).json({ error: "No tienes los permisos necesarios para acceder a este recurso." });
 };
 
 const authorizeUserAccess = (getTargetUserId) => (req, res, next) => {
@@ -47,4 +61,5 @@ module.exports = {
   authenticateToken,
   authorizeUserAccess,
   requireAdmin,
+  authorizeRole,
 };

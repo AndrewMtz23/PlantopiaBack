@@ -13,6 +13,18 @@ const getRequestIp = (req) => {
   );
 };
 
+const prisma = require('../config/prisma');
+
+const resetLogSequence = async () => {
+  await prisma.$executeRaw`
+    SELECT setval(
+      pg_get_serial_sequence('"tlogs"', 'id'),
+      COALESCE((SELECT MAX(id) FROM "tlogs"), 0) + 1,
+      false
+    )
+  `;
+};
+
 const writeActivityLog = async (executor, payload) => {
   const {
     usuario = null,
@@ -30,22 +42,37 @@ const writeActivityLog = async (executor, payload) => {
     return;
   }
 
-  await executor.query(
-    `INSERT INTO tlogs
-      (usuario, modulo, accion, descripcion, entidad, entidadId, nivel, ip, metadata)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      usuario,
-      modulo,
-      accion,
-      descripcion,
-      entidad,
-      entidadId,
-      nivel,
-      ip,
-      metadata ? JSON.stringify(metadata) : null,
-    ]
-  );
+  const createLog = () =>
+    prisma.tlogs.create({
+      data: {
+        usuario,
+        modulo,
+        accion,
+        descripcion,
+        entidad,
+        entidadId,
+        nivel,
+        ip,
+        metadata: metadata ? metadata : null,
+      }
+    });
+
+  try {
+    await createLog();
+  } catch (error) {
+    if (error?.code === "P2002" || error?.meta?.driverAdapterError) {
+      try {
+        await resetLogSequence();
+        await createLog();
+        return;
+      } catch (retryError) {
+        console.warn("Activity log skipped after sequence repair attempt:", retryError.message);
+        return;
+      }
+    }
+
+    console.warn("Activity log skipped:", error.message);
+  }
 };
 
 module.exports = {
