@@ -1,7 +1,10 @@
 const express = require("express");
+const fileUpload = require("express-fileupload");
 const path = require("path");
 const { authenticateToken, requireAdmin } = require("../middleware/auth");
+const { handleProductImagesUpload } = require("../middleware/upload");
 const { getRequestIp, writeActivityLog } = require("../utils/activityLog");
+const { cleanupTempFiles, storeProductImages } = require("../utils/imageStorage");
 
 const CATEGORY_OPTIONS = new Set([
   "Desinfectantes",
@@ -69,6 +72,38 @@ const validateProductPayload = ({
   }
 
   return null;
+};
+
+const attachProductImages = async (dbPromise, products = []) => {
+  if (!products.length) {
+    return products;
+  }
+
+  const productIds = [...new Set(products.map((product) => Number(product.producto_id || product.id)).filter(Boolean))];
+
+  if (!productIds.length) {
+    return products;
+  }
+
+  const [images] = await dbPromise.query(
+    `SELECT id, producto, ruta, nombreOriginal, esPrincipal, orden
+     FROM tproducto_imagenes
+     WHERE producto IN (?)
+     ORDER BY esPrincipal DESC, orden ASC, id ASC`,
+    [productIds]
+  );
+
+  const imagesByProduct = images.reduce((acc, image) => {
+    const productId = Number(image.producto);
+    acc[productId] = acc[productId] || [];
+    acc[productId].push(image);
+    return acc;
+  }, {});
+
+  return products.map((product) => ({
+    ...product,
+    imagenes: imagesByProduct[Number(product.producto_id || product.id)] || [],
+  }));
 };
 
 const createProductRoutes = (db, publicDirectoryPath) => {
@@ -157,15 +192,183 @@ const createProductRoutes = (db, publicDirectoryPath) => {
     }
   });
 
-  router.get("/verProducto", authenticateToken, requireAdmin, (req, res) => {
-    db.query("SELECT * FROM tproductos", (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).json({ error: "Error al obtener productos." });
+  router.get("/verProducto", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const [products] = await db.promise().query("SELECT * FROM tproductos");
+      res.send(await attachProductImages(db.promise(), products));
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: "Error al obtener productos." });
+    }
+  });
+
+  router.post(
+    "/productoImagenes/:id",
+    authenticateToken,
+    requireAdmin,
+    handleProductImagesUpload,
+    async (req, res) => {
+      const productId = Number(req.params.id);
+      const requestIp = getRequestIp(req);
+
+      if (!Number.isFinite(productId)) {
+        await cleanupTempFiles(req.files || []);
+        return res.status(400).json({ error: "Id de producto invalido." });
       }
 
-      res.send(result);
-    });
+      if (!req.files?.length) {
+        return res.status(400).json({ error: "Selecciona al menos una imagen." });
+      }
+
+      try {
+        const [products] = await db.promise().query(
+          "SELECT id, nombre, imagen FROM tproductos WHERE id = ? LIMIT 1",
+          [productId]
+        );
+
+        if (!products.length) {
+          await cleanupTempFiles(req.files || []);
+          return res.status(404).json({ error: "Producto no encontrado." });
+        }
+
+        const [countRows] = await db.promise().query(
+          "SELECT COUNT(*) AS total FROM tproducto_imagenes WHERE producto = ?",
+          [productId]
+        );
+        const currentTotal = Number(countRows[0]?.total || 0);
+
+        if (currentTotal + req.files.length > 20) {
+          await cleanupTempFiles(req.files || []);
+          return res.status(400).json({ error: "Cada producto puede tener maximo 20 imagenes." });
+        }
+
+        const storedImages = await storeProductImages({
+          productId,
+          name: products[0].nombre,
+          files: req.files,
+          startOrder: currentTotal,
+        });
+
+        for (const [index, image] of storedImages.entries()) {
+          await db.promise().query(
+            `INSERT INTO tproducto_imagenes
+              (producto, ruta, nombreOriginal, esPrincipal, orden)
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+              productId,
+              image.ruta,
+              image.nombreOriginal,
+              currentTotal === 0 && index === 0 ? 1 : 0,
+              image.orden,
+            ]
+          );
+        }
+
+        if (!products[0].imagen && storedImages[0]?.ruta) {
+          await db.promise().query("UPDATE tproductos SET imagen = ? WHERE id = ?", [
+            storedImages[0].ruta,
+            productId,
+          ]);
+        }
+
+        await writeActivityLog(db.promise(), {
+          usuario: Number(req.auth?.idUsuario) || null,
+          modulo: "productos",
+          accion: "subir_galeria_producto",
+          descripcion: `Se subieron ${storedImages.length} imagen(es) para ${products[0].nombre}.`,
+          entidad: "tproductos",
+          entidadId: productId,
+          nivel: "info",
+          ip: requestIp,
+          metadata: { imagenes: storedImages.map((image) => image.ruta) },
+        });
+
+        res.json({ ok: true, imagenes: storedImages });
+      } catch (error) {
+        await cleanupTempFiles(req.files || []);
+        console.log(error);
+        return res.status(500).json({ error: "No se pudieron guardar las imagenes." });
+      }
+    }
+  );
+
+  router.delete("/productoImagen/:imageId", authenticateToken, requireAdmin, async (req, res) => {
+    const imageId = Number(req.params.imageId);
+
+    if (!Number.isFinite(imageId)) {
+      return res.status(400).json({ error: "Id de imagen invalido." });
+    }
+
+    try {
+      const [result] = await db.promise().query(
+        "DELETE FROM tproducto_imagenes WHERE id = ?",
+        [imageId]
+      );
+
+      res.json({ ok: true, deleted: result.affectedRows });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: "No se pudo eliminar la imagen." });
+    }
+  });
+
+  router.get("/productoDetalle/:inventarioId", async (req, res) => {
+    const inventoryId = Number(req.params.inventarioId);
+
+    if (!Number.isFinite(inventoryId)) {
+      return res.status(400).json({ error: "Id de inventario invalido." });
+    }
+
+    try {
+      const [rows] = await db.promise().query(
+        `SELECT
+          ti.*,
+          tp.nombre,
+          tp.detalles,
+          tp.categoria,
+          tp.precioVenta,
+          tp.precioCompra,
+          tp.imagen,
+          tp.imagenUrl,
+          tp.estatus AS producto_estatus,
+          ts.id AS sucursal_id,
+          ts.nombre AS sucursal_nombre,
+          ts.direccion AS sucursal_direccion,
+          tp.id AS producto_id
+         FROM tinventario ti
+         JOIN tproductos tp ON ti.producto = tp.id
+         JOIN tsucursales ts ON ti.sucursal = ts.id
+         WHERE ti.id = ?
+           AND ti.estatus = 1
+           AND ti.cantidad > 0
+         LIMIT 1`,
+        [inventoryId]
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({ error: "Producto no encontrado o sin inventario." });
+      }
+
+      const [withImages] = await attachProductImages(db.promise(), rows);
+      const [availability] = await db.promise().query(
+        `SELECT ti.id, ti.cantidad, ts.nombre AS sucursal_nombre
+         FROM tinventario ti
+         JOIN tsucursales ts ON ti.sucursal = ts.id
+         WHERE ti.producto = ?
+           AND ti.estatus = 1
+           AND ti.cantidad > 0
+         ORDER BY ti.cantidad DESC`,
+        [withImages.producto_id]
+      );
+
+      res.json({
+        ...withImages,
+        disponibilidad: availability,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: "No se pudo obtener el detalle del producto." });
+    }
   });
 
   router.put("/editarProducto", authenticateToken, requireAdmin, async (req, res) => {
@@ -323,7 +526,9 @@ const createProductRoutes = (db, publicDirectoryPath) => {
     });
   });
 
-  router.post("/upload", authenticateToken, requireAdmin, (req, res) => {
+  router.post("/upload", authenticateToken, requireAdmin, fileUpload(), (req, res) => {
+    const requestIp = getRequestIp(req);
+
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ error: "No se recibio ninguna imagen." });
     }
@@ -343,10 +548,32 @@ const createProductRoutes = (db, publicDirectoryPath) => {
     const finalName = `${Date.now()}-${safeBaseName}`;
     const uploadPath = path.join(publicDirectoryPath, "images", finalName);
 
-    image.mv(uploadPath, (err) => {
+    image.mv(uploadPath, async (err) => {
       if (err) {
         console.log(err);
         return res.status(500).json({ error: "No se pudo subir la imagen." });
+      }
+
+      try {
+        await writeActivityLog(db.promise(), {
+          usuario: Number(req.auth?.idUsuario) || null,
+          modulo: "productos",
+          accion: "subir_imagen",
+          descripcion: `Se subio la imagen ${finalName}.`,
+          entidad: "tproductos",
+          entidadId: null,
+          nivel: "info",
+          ip: requestIp,
+          metadata: {
+            nombreOriginal: image.name,
+            nombreFinal: finalName,
+            ruta: `/images/${finalName}`,
+            mimetype: image.mimetype,
+            size: image.size,
+          },
+        });
+      } catch (logError) {
+        console.log(logError);
       }
 
       res.json({

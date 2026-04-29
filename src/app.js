@@ -2,7 +2,6 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const fileUpload = require("express-fileupload");
 const path = require("path");
 const bodyParser = require("body-parser");
 const db = require("./db/connection");
@@ -21,11 +20,13 @@ const createLogRoutes = require("./routes/logs");
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const publicDirectoryPath = process.env.PUBLIC_PATH || path.join(__dirname, "../public");
+const uploadsDirectoryPath = process.env.UPLOADS_PATH || path.join(__dirname, "../uploads");
 
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
-app.use(fileUpload());
+app.use(express.static(publicDirectoryPath));
+app.use("/uploads", express.static(uploadsDirectoryPath));
 
 app.use("/auth", createAuthRoutes(db));
 app.use(createUserRoutes(db));

@@ -6,8 +6,16 @@ const createBranchRoutes = (db) => {
   const router = express.Router();
 
   const normalizePhone = (value = "") => String(value).replace(/\D/g, "");
+  const normalizeCoordinate = (value) => {
+    if (value === "" || value === null || typeof value === "undefined") {
+      return null;
+    }
 
-  const validateBranchPayload = ({ gerente, nombre, telefono, direccion }) => {
+    const coordinate = Number(value);
+    return Number.isFinite(coordinate) ? coordinate : null;
+  };
+
+  const validateBranchPayload = ({ gerente, nombre, telefono, direccion, latitud, longitud }) => {
     if (!gerente) {
       return "Debes seleccionar un gerente.";
     }
@@ -22,6 +30,21 @@ const createBranchRoutes = (db) => {
 
     if (!direccion || String(direccion).trim().length < 8) {
       return "La direccion debe ser mas especifica.";
+    }
+
+    const latitude = normalizeCoordinate(latitud);
+    const longitude = normalizeCoordinate(longitud);
+
+    if ((latitude === null) !== (longitude === null)) {
+      return "Selecciona latitud y longitud para ubicar la sucursal.";
+    }
+
+    if (latitude !== null && (latitude < -90 || latitude > 90)) {
+      return "La latitud debe estar entre -90 y 90.";
+    }
+
+    if (longitude !== null && (longitude < -180 || longitude > 180)) {
+      return "La longitud debe estar entre -180 y 180.";
     }
 
     return null;
@@ -41,9 +64,35 @@ const createBranchRoutes = (db) => {
     );
   });
 
+  router.get("/sucursalesPublicas", (req, res) => {
+    db.query(
+      `SELECT id, nombre, telefono, direccion, latitud, longitud
+       FROM tsucursales
+       WHERE estatus = 1
+       ORDER BY nombre ASC`,
+      (err, result) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).json({ error: "Error al obtener sucursales." });
+        }
+
+        res.json(result);
+      }
+    );
+  });
+
   router.post("/crearSucursal", authenticateToken, requireAdmin, async (req, res) => {
-    const { estatus, gerente, nombre, telefono, direccion } = req.body;
-    const validationError = validateBranchPayload({ gerente, nombre, telefono, direccion });
+    const { estatus, gerente, nombre, telefono, direccion, latitud, longitud } = req.body;
+    const normalizedLatitude = normalizeCoordinate(latitud);
+    const normalizedLongitude = normalizeCoordinate(longitud);
+    const validationError = validateBranchPayload({
+      gerente,
+      nombre,
+      telefono,
+      direccion,
+      latitud: normalizedLatitude,
+      longitud: normalizedLongitude,
+    });
     const requestIp = getRequestIp(req);
 
     if (validationError) {
@@ -65,8 +114,16 @@ const createBranchRoutes = (db) => {
 
     try {
       const [result] = await db.promise().query(
-        "INSERT INTO tsucursales(estatus,gerente,nombre,telefono,direccion) VALUES(?,?,?,?,?)",
-        [estatus, gerente, String(nombre).trim(), normalizePhone(telefono), String(direccion).trim()]
+        "INSERT INTO tsucursales(estatus,gerente,nombre,telefono,direccion,latitud,longitud) VALUES(?,?,?,?,?,?,?)",
+        [
+          estatus,
+          gerente,
+          String(nombre).trim(),
+          normalizePhone(telefono),
+          String(direccion).trim(),
+          normalizedLatitude,
+          normalizedLongitude,
+        ]
       );
 
       await writeActivityLog(db.promise(), {
@@ -82,6 +139,8 @@ const createBranchRoutes = (db) => {
           gerente,
           telefono: normalizePhone(telefono),
           estatus,
+          latitud: normalizedLatitude,
+          longitud: normalizedLongitude,
         },
       });
 
@@ -104,8 +163,17 @@ const createBranchRoutes = (db) => {
   });
 
   router.put("/editarSucursal", authenticateToken, requireAdmin, async (req, res) => {
-    const { id, estatus, gerente, nombre, telefono, direccion } = req.body;
-    const validationError = validateBranchPayload({ gerente, nombre, telefono, direccion });
+    const { id, estatus, gerente, nombre, telefono, direccion, latitud, longitud } = req.body;
+    const normalizedLatitude = normalizeCoordinate(latitud);
+    const normalizedLongitude = normalizeCoordinate(longitud);
+    const validationError = validateBranchPayload({
+      gerente,
+      nombre,
+      telefono,
+      direccion,
+      latitud: normalizedLatitude,
+      longitud: normalizedLongitude,
+    });
     const requestIp = getRequestIp(req);
 
     if (validationError) {
@@ -127,7 +195,7 @@ const createBranchRoutes = (db) => {
 
     try {
       const [rows] = await db.promise().query(
-        "SELECT id, gerente, nombre, telefono, direccion, estatus FROM tsucursales WHERE id = ? LIMIT 1",
+        "SELECT id, gerente, nombre, telefono, direccion, latitud, longitud, estatus FROM tsucursales WHERE id = ? LIMIT 1",
         [id]
       );
 
@@ -137,8 +205,17 @@ const createBranchRoutes = (db) => {
 
       const previous = rows[0];
       const [result] = await db.promise().query(
-        "UPDATE tsucursales SET estatus=?,gerente=?,nombre=?,telefono=?,direccion=? WHERE id=?",
-        [estatus, gerente, String(nombre).trim(), normalizePhone(telefono), String(direccion).trim(), id]
+        "UPDATE tsucursales SET estatus=?,gerente=?,nombre=?,telefono=?,direccion=?,latitud=?,longitud=? WHERE id=?",
+        [
+          estatus,
+          gerente,
+          String(nombre).trim(),
+          normalizePhone(telefono),
+          String(direccion).trim(),
+          normalizedLatitude,
+          normalizedLongitude,
+          id,
+        ]
       );
 
       await writeActivityLog(db.promise(), {
@@ -157,6 +234,8 @@ const createBranchRoutes = (db) => {
             nombre: String(nombre).trim(),
             telefono: normalizePhone(telefono),
             direccion: String(direccion).trim(),
+            latitud: normalizedLatitude,
+            longitud: normalizedLongitude,
             estatus,
           },
         },

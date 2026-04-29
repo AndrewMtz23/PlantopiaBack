@@ -1,7 +1,12 @@
 const { app, db, port } = require("./src/app");
 const {
+  ensureBranchLocationColumns,
   ensurePaymentAndLogTables,
+  ensureProductGalleryTable,
   ensureProductImageColumns,
+  ensureWishlistUniqueIndex,
+  ensureUserAddressColumns,
+  ensureUserProfileImageColumn,
   ensureUserPasswordColumn,
 } = require("./src/db/ensureSchema");
 
@@ -16,7 +21,12 @@ db.getConnection(async (err, connection) => {
     connection.release();
 
     await ensureUserPasswordColumn(db);
+    await ensureUserProfileImageColumn(db);
+    await ensureUserAddressColumns(db);
     await ensureProductImageColumns(db);
+    await ensureProductGalleryTable(db);
+    await ensureWishlistUniqueIndex(db);
+    await ensureBranchLocationColumns(db);
     await ensurePaymentAndLogTables(db);
 
     app.listen(port, () => {

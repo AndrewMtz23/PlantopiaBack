@@ -3,6 +3,104 @@ const { authenticateToken, requireAdmin } = require("../middleware/auth");
 
 const createMetricsRoutes = (db) => {
   const router = express.Router();
+  const LOW_STOCK_THRESHOLD = 5;
+
+  router.get("/dashboardResumen", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const dbPromise = db.promise();
+      const [
+        [summaryRows],
+        [todaySalesRows],
+        [criticalRows],
+        [recentPaymentRows],
+        [recentLogRows],
+        [topProductRows],
+      ] = await Promise.all([
+        dbPromise.query(`
+          SELECT
+            (SELECT COUNT(*) FROM tusuarios WHERE estatus = 1) AS usuariosActivos,
+            (SELECT COUNT(*) FROM tproductos WHERE estatus = 1) AS productosActivos,
+            (SELECT COUNT(*) FROM tsucursales WHERE estatus = 1) AS sucursalesActivas,
+            (SELECT COUNT(*) FROM tinventario WHERE estatus = 1 AND cantidad <= ?) AS inventariosCriticos,
+            (SELECT COALESCE(SUM(total), 0) FROM tpagos WHERE estado = 'pagado') AS ventasTotales,
+            (SELECT COUNT(*) FROM tpagos WHERE estado = 'pagado') AS pagosProcesados
+        `, [LOW_STOCK_THRESHOLD]),
+        dbPromise.query(`
+          SELECT
+            COALESCE(SUM(total), 0) AS ventasHoy,
+            COUNT(*) AS pagosHoy
+          FROM tpagos
+          WHERE estado = 'pagado' AND DATE(fechaRegistro) = CURDATE()
+        `),
+        dbPromise.query(`
+          SELECT
+            ti.id,
+            ti.cantidad,
+            tp.nombre AS producto_nombre,
+            ts.nombre AS sucursal_nombre
+          FROM tinventario ti
+          LEFT JOIN tproductos tp ON ti.producto = tp.id
+          LEFT JOIN tsucursales ts ON ti.sucursal = ts.id
+          WHERE ti.estatus = 1 AND ti.cantidad <= ?
+          ORDER BY ti.cantidad ASC, tp.nombre ASC
+          LIMIT 5
+        `, [LOW_STOCK_THRESHOLD]),
+        dbPromise.query(`
+          SELECT
+            tp.id,
+            tp.total,
+            tp.metodo,
+            tp.estado,
+            tp.fechaRegistro,
+            tu.nombre AS usuario_nombre
+          FROM tpagos tp
+          LEFT JOIN tusuarios tu ON tp.usuario = tu.id
+          ORDER BY tp.fechaRegistro DESC
+          LIMIT 5
+        `),
+        dbPromise.query(`
+          SELECT
+            tl.id,
+            tl.modulo,
+            tl.accion,
+            tl.descripcion,
+            tl.nivel,
+            tl.fechaRegistro,
+            tu.nombre AS usuario_nombre
+          FROM tlogs tl
+          LEFT JOIN tusuarios tu ON tl.usuario = tu.id
+          ORDER BY tl.fechaRegistro DESC
+          LIMIT 6
+        `),
+        dbPromise.query(`
+          SELECT
+            tp.nombre,
+            SUM(tv.cantidad) AS cantidad,
+            SUM(tv.total) AS total
+          FROM tventas tv
+          LEFT JOIN tproductos tp ON tv.producto = tp.id
+          GROUP BY tv.producto, tp.nombre
+          ORDER BY cantidad DESC
+          LIMIT 5
+        `),
+      ]);
+
+      res.json({
+        threshold: LOW_STOCK_THRESHOLD,
+        resumen: {
+          ...summaryRows[0],
+          ...todaySalesRows[0],
+        },
+        inventarioCritico: criticalRows,
+        pagosRecientes: recentPaymentRows,
+        logsRecientes: recentLogRows,
+        productosTop: topProductRows,
+      });
+    } catch (error) {
+      console.error("Error al cargar dashboard:", error);
+      res.status(500).json({ error: "No se pudo cargar el dashboard." });
+    }
+  });
 
   router.get("/metricasGenerales", authenticateToken, requireAdmin, (req, res) => {
     const query = `

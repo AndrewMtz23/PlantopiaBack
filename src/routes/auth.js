@@ -3,12 +3,15 @@ const { authenticateToken } = require("../middleware/auth");
 const { normalizeEmail, validateLoginPayload, validateUserPayload } = require("../utils/authValidation");
 const { comparePassword, hashPassword, isHashedPassword } = require("../utils/passwords");
 const { signAuthToken } = require("../utils/jwt");
+const { getRequestIp, writeActivityLog } = require("../utils/activityLog");
+const { storeUserProfileImage } = require("../utils/imageStorage");
 
 const createSessionPayload = (user) => ({
   idUsuario: user.id,
   tipo: user.tipo,
   nombre: user.nombre,
   correo: user.correo,
+  fotoPerfil: user.fotoPerfil,
 });
 
 const createAuthRoutes = (db) => {
@@ -16,6 +19,8 @@ const createAuthRoutes = (db) => {
 
   router.post("/login", (req, res) => {
     const { correo = "", clave = "" } = req.body;
+    const normalizedEmail = normalizeEmail(correo);
+    const requestIp = getRequestIp(req);
     const validationError = validateLoginPayload({ correo, clave });
 
     if (validationError) {
@@ -23,8 +28,8 @@ const createAuthRoutes = (db) => {
     }
 
     db.query(
-      "SELECT id, tipo, nombre, correo, clave, estatus FROM tusuarios WHERE LOWER(correo) = ? LIMIT 1",
-      [normalizeEmail(correo)],
+      "SELECT id, tipo, nombre, correo, clave, estatus, fotoPerfil FROM tusuarios WHERE LOWER(correo) = ? LIMIT 1",
+      [normalizedEmail],
       async (err, result) => {
         if (err) {
           console.log(err);
@@ -32,6 +37,22 @@ const createAuthRoutes = (db) => {
         }
 
         if (result.length === 0 || Number(result[0].estatus) !== 1) {
+          try {
+            await writeActivityLog(db.promise(), {
+              usuario: null,
+              modulo: "auth",
+              accion: "login_fallido",
+              descripcion: `Intento de inicio de sesion fallido para ${normalizedEmail}.`,
+              entidad: "tusuarios",
+              entidadId: null,
+              nivel: "warning",
+              ip: requestIp,
+              metadata: { correo: normalizedEmail, motivo: "usuario_inexistente_o_inactivo" },
+            });
+          } catch (logError) {
+            console.log(logError);
+          }
+
           return res.status(401).json({ error: "Correo o contrasena incorrectos." });
         }
 
@@ -39,6 +60,22 @@ const createAuthRoutes = (db) => {
         const isValidPassword = await comparePassword(clave, user.clave);
 
         if (!isValidPassword) {
+          try {
+            await writeActivityLog(db.promise(), {
+              usuario: user.id,
+              modulo: "auth",
+              accion: "login_fallido",
+              descripcion: `Intento de inicio de sesion fallido para ${user.correo}.`,
+              entidad: "tusuarios",
+              entidadId: user.id,
+              nivel: "warning",
+              ip: requestIp,
+              metadata: { correo: user.correo, motivo: "clave_incorrecta" },
+            });
+          } catch (logError) {
+            console.log(logError);
+          }
+
           return res.status(401).json({ error: "Correo o contrasena incorrectos." });
         }
 
@@ -54,6 +91,22 @@ const createAuthRoutes = (db) => {
         const session = createSessionPayload(user);
         const token = signAuthToken(session);
 
+        try {
+          await writeActivityLog(db.promise(), {
+            usuario: user.id,
+            modulo: "auth",
+            accion: "login_exitoso",
+            descripcion: `Inicio de sesion de ${user.nombre}.`,
+            entidad: "tusuarios",
+            entidadId: user.id,
+            nivel: "info",
+            ip: requestIp,
+            metadata: { correo: user.correo, tipo: user.tipo },
+          });
+        } catch (logError) {
+          console.log(logError);
+        }
+
         return res.json({
           message: "Inicio de sesion exitoso.",
           token,
@@ -64,6 +117,7 @@ const createAuthRoutes = (db) => {
   });
 
   router.post("/register", async (req, res) => {
+    const requestIp = getRequestIp(req);
     const payload = {
       estatus: 1,
       tipo: 2,
@@ -104,6 +158,36 @@ const createAuthRoutes = (db) => {
           payload.domicilio.trim(),
         ]
       );
+      const fotoPerfil = await storeUserProfileImage({
+        userId: result.insertId,
+        name: payload.nombre.trim(),
+      });
+
+      await db.promise().query("UPDATE tusuarios SET fotoPerfil = ? WHERE id = ?", [
+        fotoPerfil,
+        result.insertId,
+      ]);
+
+      try {
+        await writeActivityLog(db.promise(), {
+          usuario: result.insertId,
+          modulo: "auth",
+          accion: "registro_usuario",
+          descripcion: `Se registro el usuario ${payload.nombre.trim()} (${payload.correo}).`,
+          entidad: "tusuarios",
+          entidadId: result.insertId,
+          nivel: "info",
+          ip: requestIp,
+          metadata: {
+            correo: payload.correo,
+            tipo: payload.tipo,
+            estatus: payload.estatus,
+            fotoPerfil,
+          },
+        });
+      } catch (logError) {
+        console.log(logError);
+      }
 
       return res.status(201).json({
         message: "Usuario registrado con exito.",
@@ -117,7 +201,7 @@ const createAuthRoutes = (db) => {
 
   router.get("/me", authenticateToken, (req, res) => {
     db.query(
-      "SELECT id, tipo, nombre, correo, estatus FROM tusuarios WHERE id = ? LIMIT 1",
+      "SELECT id, tipo, nombre, correo, estatus, fotoPerfil FROM tusuarios WHERE id = ? LIMIT 1",
       [req.auth.idUsuario],
       (err, result) => {
         if (err) {

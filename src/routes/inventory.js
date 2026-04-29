@@ -4,6 +4,7 @@ const { getRequestIp, writeActivityLog } = require("../utils/activityLog");
 
 const createInventoryRoutes = (db) => {
   const router = express.Router();
+  const LOW_STOCK_THRESHOLD = 5;
 
   router.post("/crearInventario", authenticateToken, requireAdmin, (req, res) => {
     const { estatus, sucursal, proveedor, producto, cantidad } = req.body;
@@ -43,6 +44,40 @@ const createInventoryRoutes = (db) => {
       }
 
       res.send(result);
+    });
+  });
+
+  router.get("/inventarioCritico", authenticateToken, requireAdmin, (req, res) => {
+    const query = `
+      SELECT
+        ti.id,
+        ti.estatus,
+        ti.sucursal,
+        ti.proveedor,
+        ti.producto,
+        ti.cantidad,
+        tp.nombre AS producto_nombre,
+        ts.nombre AS sucursal_nombre,
+        tpr.marca AS proveedor_nombre
+      FROM tinventario ti
+      LEFT JOIN tproductos tp ON ti.producto = tp.id
+      LEFT JOIN tsucursales ts ON ti.sucursal = ts.id
+      LEFT JOIN tproveedores tpr ON ti.proveedor = tpr.id
+      WHERE ti.estatus = 1 AND ti.cantidad <= ?
+      ORDER BY ti.cantidad ASC, tp.nombre ASC
+      LIMIT 8
+    `;
+
+    db.query(query, [LOW_STOCK_THRESHOLD], (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Error al obtener inventario critico." });
+      }
+
+      res.json({
+        threshold: LOW_STOCK_THRESHOLD,
+        items: result,
+      });
     });
   });
 
