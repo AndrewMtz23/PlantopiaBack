@@ -68,6 +68,7 @@ class MetricService {
       }),
       // Para Top Products usamos queryRaw para agrupamiento complejo si es necesario, o aggregate
       prisma.tventas.groupBy({
+        where: { tpagos: { estado: 'pagado' } },
         by: ['producto'],
         _sum: { cantidad: true, total: true },
         orderBy: { _sum: { cantidad: 'desc' } },
@@ -117,6 +118,7 @@ class MetricService {
 
   async getAverageProfitability() {
     const sales = await prisma.tventas.findMany({
+      where: { tpagos: { estado: 'pagado' } },
       include: {
         tproductos: {
           select: { precioCompra: true, precioVenta: true }
@@ -130,7 +132,7 @@ class MetricService {
 
     const margins = sales.map((sale) => {
       const revenue = Number(sale.total || 0);
-      const cost = Number(sale.tproductos?.precioCompra || 0) * Number(sale.cantidad || 0);
+      const cost = Number(sale.costoUnitario ?? sale.tproductos?.precioCompra ?? 0) * Number(sale.cantidad || 0);
 
       if (revenue <= 0) {
         return 0;
@@ -144,6 +146,7 @@ class MetricService {
 
   async getSalesByBranch() {
     const sales = await prisma.tventas.findMany({
+      where: { tpagos: { estado: 'pagado' } },
       include: {
         tproductos: true
       },
@@ -173,10 +176,10 @@ class MetricService {
       const date = sale.fechaRegistro
         ? new Date(sale.fechaRegistro).toISOString().slice(0, 10)
         : new Date().toISOString().slice(0, 10);
-      const branch = branchByProduct.get(sale.producto) || "Sucursal general";
+      const branch = sale.sucursal ? `Sucursal ${sale.sucursal}` : "Historico sin sucursal registrada";
       const key = `${date}::${branch}`;
       const total = Number(sale.total || 0);
-      const cost = Number(sale.tproductos?.precioCompra || 0) * Number(sale.cantidad || 0);
+      const cost = Number(sale.costoUnitario ?? sale.tproductos?.precioCompra ?? 0) * Number(sale.cantidad || 0);
 
       const current = grouped.get(key) || {
         fecha: date,
