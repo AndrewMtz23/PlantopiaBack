@@ -9,6 +9,7 @@ class AuthService {
   createSessionPayload(user) {
     return {
       idUsuario: user.id,
+      tokenVersion: user.tokenVersion,
       tipo: user.tipo,
       nombre: user.nombre,
       correo: user.correo,

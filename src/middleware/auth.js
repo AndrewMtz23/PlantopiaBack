@@ -1,4 +1,5 @@
 const { verifyAuthToken } = require("../utils/jwt");
+const prisma = require('../config/prisma');
 
 const extractBearerToken = (authorization = "") => {
   if (!authorization.startsWith("Bearer ")) {
@@ -8,7 +9,7 @@ const extractBearerToken = (authorization = "") => {
   return authorization.slice(7).trim();
 };
 
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const token = extractBearerToken(req.headers.authorization || "");
 
   if (!token) {
@@ -16,7 +17,12 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    req.auth = verifyAuthToken(token);
+    const claims = verifyAuthToken(token);
+    if (!Number.isInteger(claims.idUsuario)) throw new Error('Invalid identity');
+    const user = await prisma.tusuarios.findUnique({ where: { id: claims.idUsuario },
+      select: { id: true, tipo: true, estatus: true, tokenVersion: true } });
+    if (!user || user.estatus !== 1 || claims.tokenVersion !== user.tokenVersion) throw new Error('Session revoked');
+    req.auth = { ...claims, tipo: user.tipo };
     return next();
   } catch (error) {
     return res.status(401).json({ error: "Token invalido o expirado." });
@@ -48,9 +54,8 @@ const authorizeRole = (allowedRoles = []) => (req, res, next) => {
 const authorizeUserAccess = (getTargetUserId) => (req, res, next) => {
   const targetUserId = Number(getTargetUserId(req));
   const currentUserId = Number(req.auth?.idUsuario);
-  const isAdmin = Number(req.auth?.tipo) === 1;
 
-  if (isAdmin || (targetUserId && currentUserId === targetUserId)) {
+  if (Number.isInteger(targetUserId) && targetUserId > 0 && currentUserId === targetUserId) {
     return next();
   }
 

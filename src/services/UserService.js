@@ -141,7 +141,8 @@ class UserService {
       metadata: { tipo: newUser.tipo, estatus: newUser.estatus, correo: newUser.correo, fotoPerfil },
     });
 
-    return { ...newUser, fotoPerfil };
+    const { clave: _secret, ...safeUser } = newUser;
+    return { ...safeUser, fotoPerfil };
   }
 
   async getAllUsers() {
@@ -290,7 +291,7 @@ class UserService {
     if (!isCurrentValid) throw new Error("La contrasena actual no es correcta.");
 
     const hashedPassword = await hashPassword(nuevaClave);
-    await UserRepository.update(userId, { clave: hashedPassword });
+    await UserRepository.update(userId, { clave: hashedPassword, tokenVersion: { increment: 1 } });
 
     await writeActivityLog(null, {
       usuario: userId,
@@ -378,6 +379,7 @@ class UserService {
 
     if (clave && clave.trim() !== "") {
       dataToUpdate.clave = await hashPassword(clave);
+      dataToUpdate.tokenVersion = { increment: 1 };
     }
 
     const updated = await UserRepository.update(userId, dataToUpdate);
@@ -394,7 +396,8 @@ class UserService {
       metadata: { antes: { nombre: previousUser.nombre }, despues: { nombre: updated.nombre }, actualizoClave: Boolean(clave), actualizoFoto: Boolean(file) },
     });
 
-    return updated;
+    const { clave: _secret, ...safeUser } = updated;
+    return safeUser;
   }
 
   async deleteUser(userId, adminId, requestIp) {
