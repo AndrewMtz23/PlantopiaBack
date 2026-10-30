@@ -6,11 +6,11 @@ class CommerceController {
     try {
       const requestIp = getRequestIp(req);
       const { inventario, usuario, cantidad, subtotal } = req.body;
-      const result = await CommerceService.addToCart(usuario, inventario, cantidad, subtotal, requestIp);
+      const result = await CommerceService.addToCart(req.auth.idUsuario, inventario, cantidad, subtotal, requestIp);
       res.json(result);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 
@@ -20,27 +20,27 @@ class CommerceController {
       res.json(cart);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al obtener el carrito' });
+      res.status(error.status || 500).json({ error: 'Error al obtener el carrito' });
     }
   }
 
   async updateCartItem(req, res) {
     try {
-      const result = await CommerceService.updateCartItem(req.body.id, req.body);
+      const result = await CommerceService.updateCartItem(req.auth.idUsuario, req.body.id, req.body);
       res.json(result);
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: error.message });
+      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
     }
   }
 
   async deleteCartItem(req, res) {
     try {
-      const result = await CommerceService.deleteCartItem(req.params.id);
+      const result = await CommerceService.deleteCartItem(req.auth.idUsuario, req.params.id);
       res.json(result);
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: error.message });
+      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
     }
   }
 
@@ -48,11 +48,11 @@ class CommerceController {
     try {
       const requestIp = getRequestIp(req);
       const { inventario, usuario } = req.body;
-      const result = await CommerceService.addToWishlist(usuario, inventario, requestIp);
+      const result = await CommerceService.addToWishlist(req.auth.idUsuario, inventario, requestIp);
       res.json(result);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al agregar a la lista' });
+      res.status(error.status || 500).json({ error: 'Error al agregar a la lista' });
     }
   }
 
@@ -62,7 +62,7 @@ class CommerceController {
       res.json(wishlist);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al obtener la lista' });
+      res.status(error.status || 500).json({ error: 'Error al obtener la lista' });
     }
   }
 
@@ -72,17 +72,17 @@ class CommerceController {
       res.json(wishlistIds);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al obtener agregados' });
+      res.status(error.status || 500).json({ error: 'Error al obtener agregados' });
     }
   }
 
   async deleteWishlistItem(req, res) {
     try {
-      const result = await CommerceService.deleteWishlistItem(req.params.id);
+      const result = await CommerceService.deleteWishlistItem(req.auth.idUsuario, req.params.id);
       res.json(result);
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: error.message });
+      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
     }
   }
 
@@ -95,22 +95,23 @@ class CommerceController {
       res.json(result);
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: error.message });
+      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
     }
   }
 
   async processPurchase(req, res) {
     try {
       const requestIp = getRequestIp(req);
-      const result = await CommerceService.processPurchase(req.body.usuario, req.body, requestIp);
+      const result = await CommerceService.processPurchase(req.auth.idUsuario, req.body, requestIp, req.get('Idempotency-Key'));
       res.json({
         message: "Compra procesada correctamente.",
-        pagoId: result.paymentId,
+        pagoId: result.pagoId,
+        estado: result.estado,
         total: result.total
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 
@@ -120,7 +121,7 @@ class CommerceController {
       res.json(orders);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al obtener pedidos pendientes' });
+      res.status(error.status || 500).json({ error: 'Error al obtener pedidos pendientes' });
     }
   }
 
@@ -134,7 +135,7 @@ class CommerceController {
       res.json(updated);
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: error.message });
+      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
     }
   }
 
@@ -144,7 +145,7 @@ class CommerceController {
       res.json(deliveries);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al obtener entregas disponibles' });
+      res.status(error.status || 500).json({ error: 'Error al obtener entregas disponibles' });
     }
   }
 
@@ -155,7 +156,7 @@ class CommerceController {
       res.json(deliveries);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error al obtener tus entregas' });
+      res.status(error.status || 500).json({ error: 'Error al obtener tus entregas' });
     }
   }
 
@@ -167,7 +168,7 @@ class CommerceController {
       res.json(result);
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: error.message });
+      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
     }
   }
 }

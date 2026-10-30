@@ -1,6 +1,7 @@
 const express = require('express');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, authorizeUserAccess } = require('../middleware/auth');
 const CommerceService = require('../services/CommerceService');
+const { customerSale, customerPayment } = require('../utils/paymentDto');
 
 const createPaymentRoutes = (db) => {
   const router = express.Router();
@@ -39,7 +40,7 @@ const createPaymentRoutes = (db) => {
       precioVenta: venta.tproductos?.precioVenta,
     }));
 
-    return { pago: pagoPlano, items };
+    return userId ? { pago: customerPayment(pagoPlano), items: ventas.map(customerSale) } : { pago: pagoPlano, items };
   };
 
   router.get('/verPagos', authenticateToken, requireAdmin, async (req, res) => {
@@ -70,7 +71,7 @@ const createPaymentRoutes = (db) => {
     }
   });
 
-  router.get('/misPagos/:usuario(\\d+)', authenticateToken, async (req, res) => {
+  router.get('/misPagos/:usuario(\\d+)', authenticateToken, authorizeUserAccess(req => req.params.usuario), async (req, res) => {
     const prisma = require('../config/prisma');
     try {
       const pagos = await prisma.tpagos.findMany({
@@ -78,17 +79,13 @@ const createPaymentRoutes = (db) => {
         orderBy: { fechaRegistro: 'desc' }
       });
       const enriched = await CommerceService.attachPaymentRelations(pagos, { includeSales: true });
-      res.json(enriched.map((pago) => ({
-        ...pago,
-        productos: pago.tventas?.length || 0,
-        unidades: (pago.tventas || []).reduce((sum, item) => sum + Number(item.cantidad || 0), 0),
-      })));
+      res.json(enriched.map(customerPayment));
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   });
 
-  router.get('/miPago/:usuario(\\d+)/:id(\\d+)', authenticateToken, async (req, res) => {
+  router.get('/miPago/:usuario(\\d+)/:id(\\d+)', authenticateToken, authorizeUserAccess(req => req.params.usuario), async (req, res) => {
     const prisma = require('../config/prisma');
     try {
       const detail = await buildPaymentDetail(prisma, req.params.id, req.params.usuario);
@@ -99,24 +96,15 @@ const createPaymentRoutes = (db) => {
     }
   });
 
-  router.put('/actualizarSeguimientoPago/:id(\\d+)', authenticateToken, requireAdmin, async (req, res) => {
-    const prisma = require('../config/prisma');
+  router.post('/pagos/:id/confirmar-efectivo', authenticateToken, requireAdmin, async (req, res, next) => {
+    try { res.json(await require('../services/PaymentStateService').confirmCashPayment({ paymentId: req.params.id, actorId: req.auth.idUsuario })); }
+    catch (error) { next(error); }
+  });
+  router.put('/actualizarSeguimientoPago/:id', authenticateToken, requireAdmin, async (req, res, next) => {
     try {
-      const { estadoEntrega, fechaEstimadaEntrega, guiaEntrega, notasEntrega } = req.body;
-      const seguimiento = await prisma.tpagos.update({
-        where: { id: Number(req.params.id) },
-        data: {
-          estadoEntrega,
-          fechaEstimadaEntrega: fechaEstimadaEntrega ? new Date(`${fechaEstimadaEntrega}T00:00:00`) : null,
-          guiaEntrega: guiaEntrega || null,
-          notasEntrega: notasEntrega || null,
-          fechaActualizacion: new Date(),
-        }
-      });
+      const seguimiento = await require('../services/PaymentStateService').updateDelivery({ paymentId: req.params.id, status: req.body.estadoEntrega, actorId: req.auth.idUsuario, actorRole: req.auth.tipo, tracking: req.body });
       res.json({ seguimiento });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+    } catch (error) { next(error); }
   });
 
   return router;
