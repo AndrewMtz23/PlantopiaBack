@@ -1,55 +1,169 @@
-﻿# Plantopia Backend — Sprint1
+# Plantopia · Backend
 
-Express + PostgreSQL 17 + Prisma. Node 22.21.0 (`.nvmrc`).
+**The API behind Plantopia's plant store and management platform.**
 
-## Install a NEW database
+Plantopia connects a customer storefront with the tools needed to manage products, branch inventory, orders and deliveries. This repository contains the Node.js API, PostgreSQL data model and business logic shared by those experiences.
 
-Create `.env` from `.env.example`; set DATABASE_URL and a private random JWT_SECRET. Never reuse test credentials for real data.
+[![Backend CI](https://github.com/AndrewMtz23/PlantopiaBack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AndrewMtz23/PlantopiaBack/actions/workflows/ci.yml)
 
-```text
+[Frontend repository](https://github.com/AndrewMtz23/PlantopiaFront) · [Getting started](#getting-started) · [API overview](#api-overview) · [Testing](#testing)
+
+## Features
+
+- **Accounts and access:** registration, authentication, profiles, password changes and role-based permissions.
+- **Catalog:** products, categories, suppliers and product images.
+- **Inventory:** stock availability and inventory management across branches.
+- **Shopping:** customer-owned carts, wishlists and server-calculated order quotes.
+- **Checkout:** transactional order creation, stock updates and idempotent submissions.
+- **Payments and delivery:** pending cash orders, collection confirmation, preparation, courier assignment and delivery tracking.
+- **Store operations:** activity logs and sales metrics based on collected payments.
+
+The application uses **PostgreSQL**. MySQL utilities are retained for importing legacy data; MySQL is not required to run the API.
+
+## Technology
+
+| Area | Stack |
+| --- | --- |
+| Runtime | Node.js 22.21.0 |
+| HTTP API | Express 4 |
+| Database | PostgreSQL 17 |
+| Data access | Prisma 7 with the PostgreSQL driver adapter |
+| Authentication | JWT and bcrypt |
+| Monetary calculations | Decimal.js |
+| Tests | Node.js test runner and Supertest |
+| CI | GitHub Actions |
+
+## Getting started
+
+### 1. Install
+
+Use the Node.js version in [`.nvmrc`](.nvmrc) and a running PostgreSQL instance.
+
+~~~bash
+git clone https://github.com/AndrewMtz23/PlantopiaBack.git
+cd PlantopiaBack
 npm ci
+~~~
+
+### 2. Configure
+
+Copy [`.env.example`](.env.example) to `.env`. Create an empty `plantopia` database and configure its connection:
+
+~~~dotenv
+PORT=3001
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/plantopia
+JWT_SECRET=replace-with-your-own-long-random-secret
+JWT_EXPIRES_IN=8h
+~~~
+
+Replace all placeholders with your own values. `.env` is excluded from Git.
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Required PostgreSQL connection string |
+| `JWT_SECRET` | Required token-signing secret |
+| `PORT` | HTTP port; default `3001` |
+| `JWT_EXPIRES_IN` | Token lifetime; default `8h` |
+| `PUBLIC_PATH` / `UPLOADS_PATH` | Optional overrides for asset and upload directories |
+| `AUTH_RATE_LIMIT` | Authentication requests per IP per 15 minutes; default `20` |
+
+### 3. Initialize and run
+
+For a **new, empty database**:
+
+~~~bash
 npx prisma validate
 npx prisma generate
 npx prisma migrate deploy
-npm start
-```
+npm run dev
+~~~
 
-The server does not repair sequences on startup. After a controlled import, with application writers stopped, `npm run db:reconcile` reconciles them and exits nonzero on failure.
+The API starts at `http://localhost:3001`. Nodemon restarts it when source files change. For a populated database, follow [Existing databases](#existing-databases) first.
 
-## Existing PostgreSQL database
+## Architecture
 
-Do not blindly run the baseline against an existing database. Back up and restore into an isolated copy first. Compare the existing schema to `202610290001_baseline/migration.sql`. Only when it matches, mark that baseline applied with `prisma migrate resolve --applied 202610290001_baseline`, then apply later migrations to the COPY and reconcile counts, totals and relations. Repeat the reviewed procedure on the valuable database only after explicit operational approval. `db push` is not the release workflow.
+~~~text
+prisma/             Data model and versioned migrations
+src/
+  config/           Database client configuration
+  controllers/      HTTP request and response handling
+  middleware/       Authentication, authorization, errors and uploads
+  repositories/     Data access helpers
+  routes/           Endpoint definitions
+  services/         Account, catalog, checkout and payment logic
+  db/               Import and data normalization utilities
+  utils/            Shared application helpers
+scripts/            Maintenance commands
+tests/              Unit and PostgreSQL integration tests
+index.js            Server startup and shutdown
+~~~
 
-The integrity migration aborts transactionally for duplicate normalized email, monetary rounding/overflow, invalid quantities or orphan references. It never deletes or silently repairs those records. Diagnose and reconcile records before retrying; preserve the source backup. Old paid records remain paid until business reconciliation; legacy sales lacking inventory provenance cannot be auto-cancelled. New schema revokes old tokens missing tokenVersion; users log in again.
+The backend follows a controller/service/repository structure. Checkout and payment transitions use database transactions. Protected operations validate the account's current role, status and resource ownership on the server.
 
-## MySQL import
+## API overview
 
-`node migrate_data_mysql_to_pg.js --verify-only` compares a consistent read snapshot to PostgreSQL without importing. Without that flag it imports all expected tables in one target transaction, checks normalized content/IDs/counts and aborts on conflicts. MySQL source is read only. Configure DB_HOST/USER/PASSWORD/NAME and DATABASE_URL; stop target writers during import and sequence reconciliation. Money requiring rounding is rejected, not hidden by comparison. JSON/date/decimal values are normalized; unknown incompatible schema columns are errors. This workflow was checked with synthetic PostgreSQL fixtures, not the owner's live MySQL dataset.
+Protected endpoints accept `Authorization: Bearer <token>`.
 
-## Tests
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/auth/register` | Create a customer account |
+| `POST` | `/auth/login` | Sign in |
+| `GET` | `/auth/me` | Retrieve the authenticated session |
+| `GET` | `/obtenerProductos` | Browse the public catalog |
+| `GET` | `/perfil` | Retrieve the current user's profile |
+| `GET` | `/carrito/cotizacion` | Get authoritative cart totals and quote fingerprint |
+| `POST` | `/procesarCompra` | Submit an order with an `Idempotency-Key` header |
+| `POST` | `/pagos/:id/confirmar-efectivo` | Confirm cash collection as an administrator |
+| `GET` | `/health` | Check HTTP service availability |
+| `GET` | `/ready` | Check database connectivity |
 
-Use a separate local database whose name ends in `_test`. The suite truncates its synthetic tables and exercises migrations in an isolated schema. TEST_DATABASE_URL must not identify the same database as DATABASE_URL; omit DATABASE_URL for tests. No .env from another checkout is copied automatically.
+See [`src/routes`](src/routes) for all endpoint definitions and [`CheckoutService.js`](src/services/CheckoutService.js) for the checkout contract.
 
-PowerShell example for the disposable audit cluster:
+### Orders and payments
 
-```powershell
-$env:TEST_DATABASE_URL='postgresql://sprint1@127.0.0.1:55432/plantopia_test'
+The API calculates prices, tax, shipping and totals with decimal arithmetic. Quote fingerprints detect changes before checkout; idempotency keys allow safe retries without creating duplicate orders.
+
+Cash orders begin as **pending payment**. An administrator confirms collection separately. Eligible unpaid orders can be cancelled with inventory restoration. Online payment processing is not enabled in this version.
+
+## Development commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start development mode with nodemon |
+| `npm start` | Start the API without a file watcher |
+| `npm test` | Run all tests |
+| `npm run test:integration` | Run database integration tests |
+| `npm run db:reconcile` | Reconcile sequences after a controlled import |
+| `npx prisma migrate deploy` | Apply pending migrations |
+| `npm audit --audit-level=high` | Check dependency advisories |
+
+## Testing
+
+Use a dedicated PostgreSQL database whose name ends in `_test`. **Integration tests delete fixture data: never use a database containing valuable records.**
+
+After creating `plantopia_test`, run this in a separate PowerShell terminal:
+
+~~~powershell
+$env:TEST_DATABASE_URL = 'postgresql://USER:PASSWORD@localhost:5432/plantopia_test'
+$env:DATABASE_URL = $env:TEST_DATABASE_URL
+npx prisma migrate deploy
+if ($LASTEXITCODE -ne 0) { throw 'Test database migration failed.' }
+Remove-Item Env:DATABASE_URL
 npm test
-```
+~~~
 
-Initialize this test DB with `prisma migrate deploy` first, using its URL temporarily as DATABASE_URL; unset it before tests. `npm run test:integration` selects integration tests. CI provisions PostgreSQL 17 and runs installation, schema validation, migrations, full tests and dependency audit.
+Tests cover authorization, session revocation, pricing, checkout concurrency, duplicate requests, payment transitions and migration integrity. GitHub Actions provisions PostgreSQL and runs installation, schema validation, migrations, tests and dependency checks.
 
-## API contract
+## Existing databases
 
-- Bearer JWT identity is checked against current account status, role and tokenVersion.
-- Cart/wishlist/payment reads and writes are scoped to the owner, including legacy aliases.
-- GET `/carrito/cotizacion` returns items, decimal-string totals and quoteHash.
-- POST `/procesarCompra` requires `Idempotency-Key`, quoteHash, metodo `efectivo`, and delivery address. The same key/payload returns the same order; conflicting reuse or changed quote returns 409. Subtotal and usuario supplied by a client are not authorities.
-- New cash orders are pending. POST `/pagos/:id/confirmar-efectivo` is admin-only, audited and idempotent.
-- Preparing/ready unpaid cash orders may be cancelled once. Paid/shipped and legacy orders without provenance require separate manual reconciliation.
-- Errors use `{ "error": { "code": "...", "message": "..." } }` with internal DB details concealed.
-- Amounts use decimal arithmetic and two decimal places. Current MXN tax/shipping constants preserve the old technical assumptions; commercial/fiscal approval is still needed before real sales.
+Before adopting an existing PostgreSQL database, back it up and restore it into an isolated copy. If it has no Prisma migration history, compare its schema with the [baseline migration](prisma/migrations/202610290001_baseline/migration.sql). Mark the baseline as applied only when the schemas match. Test subsequent migrations on the copy before applying the reviewed procedure to the original with its owner's approval.
 
-## Deployment constraints
+For databases with migration history, use `prisma migrate deploy` for pending migrations; do not reapply the baseline. Avoid `db push` or database resets as a deployment procedure. Integrity migrations reject incompatible records rather than silently rounding money or deleting data.
 
-The auth rate limiter is per process (20 attempts / 15 minutes by default). Configure a shared store and trusted-proxy policy before multiple replicas; do not assume a global limit. Plan durable uploads, HTTPS, origin allowlist, monitoring, backups and restoration before publication. No production database migration or deployment is performed by CI. Frontend legacy dependency exceptions are documented in its SECURITY.md.
+Legacy imports use `migrate_data_mysql_to_pg.js`; `--verify-only` compares MySQL and PostgreSQL without importing. Configure the `DB_*` variables only for these utilities. Stop application writes during imports and sequence reconciliation.
+
+## Deployment
+
+Plantopia is under active development. Production requires HTTPS, restricted origins, durable image storage, protected secrets and tested backups. Authentication throttling is per process; multiple replicas require a shared rate-limit store. Validate tax, shipping and delivery rules against the actual business before accepting live orders.
+
+CI validates the codebase. It does not deploy the application or migrate production databases automatically.
