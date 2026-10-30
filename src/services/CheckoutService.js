@@ -2,16 +2,9 @@ const crypto = require('node:crypto');
 const prisma = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const { calculateTotals, quantity, money } = require('./PricingService');
+const { withTransaction: transaction } = require('../infrastructure/db/transaction');
+const { appendAudit } = require('../modules/audit/auditService');
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
-async function transaction(work) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try { return await prisma.$transaction(work, { isolationLevel: 'Serializable', maxWait: 10000, timeout: 15000 }); }
-    catch (error) {
-      if (error.code !== 'P2034' && error.code !== 'P2002') throw error;
-      if (attempt === 2) throw new AppError(409, 'CONCURRENT_CHANGE', 'La operacion cambio. Intenta de nuevo.');
-    }
-  }
-}
 const lockCart = (tx, userId) => tx.$queryRaw`SELECT id FROM tusuarios WHERE id = ${Number(userId)} FOR UPDATE`;
 async function quoteFor(tx, userId) {
   const rows = await tx.tpedido.findMany({ where: { usuario: Number(userId) }, orderBy: { inventario: 'asc' },
@@ -78,7 +71,7 @@ async function checkout({ userId, idempotencyKey, payload }) {
         costoUnitario: quote.rows[index].tinventario.tproductos.precioCompra } });
     }
     await tx.tpedido.deleteMany({ where: { usuario: Number(userId) } });
-    await tx.tlogs.create({ data: { usuario: Number(userId), modulo: 'pedidos', accion: 'crear_pedido', descripcion: 'Pedido pendiente de cobro', entidad: 'tpagos', entidadId: payment.id } });
+    await appendAudit(tx, { actorId: Number(userId), action: 'crear_pedido', entity: 'tpagos', entityId: payment.id });
     return { pagoId: payment.id, total: payment.total.toFixed(2), estado: payment.estado };
   });
 }

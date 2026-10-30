@@ -1,10 +1,11 @@
 const AppError = require('../utils/AppError');
-const { transaction } = require('./CheckoutService');
+const { withTransaction: transaction } = require('../infrastructure/db/transaction');
+const { appendAudit } = require('../modules/audit/auditService');
 const notFound = () => new AppError(404, 'NOT_FOUND', 'Pedido no encontrado.');
 const conflict = () => new AppError(409, 'INVALID_TRANSITION', 'El pedido no admite esta operacion.');
 async function lock(tx, id) { await tx.$queryRaw`SELECT id FROM tpagos WHERE id = ${Number(id)} FOR UPDATE`; }
 async function log(tx, actor, id, action) {
-  await tx.tlogs.create({ data: { usuario: actor, modulo: 'pagos', accion: action, descripcion: action, entidad: 'tpagos', entidadId: id } });
+  await appendAudit(tx, { actorId: actor, action, entity: 'tpagos', entityId: id });
 }
 async function confirmCashPayment({ paymentId, actorId }) {
   return transaction(async tx => {
