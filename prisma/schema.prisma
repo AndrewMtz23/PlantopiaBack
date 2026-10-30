@@ -67,26 +67,34 @@ model tlogs {
 }
 
 model tpagos {
-  id                   Int       @id @default(autoincrement())
+  idempotencyKey       String?    @db.VarChar(120)
+  requestHash          String?    @db.VarChar(64)
+  cobradoPor           Int?
+  fechaCobro           DateTime?
+  tusuarios            tusuarios  @relation("PaymentOwner", fields: [usuario], references: [id])
+  repartidor           tusuarios? @relation("PaymentCourier", fields: [repartidorId], references: [id])
+  tventas              tventas[]
+  id                   Int        @id @default(autoincrement())
   usuario              Int
-  metodo               String    @default("efectivo") @db.VarChar(40)
-  estado               String    @default("pagado") @db.VarChar(30)
-  referencia           String?   @db.VarChar(120)
-  subtotal             Decimal   @default(0.00) @db.Decimal(10, 2)
-  iva                  Decimal   @default(0.00) @db.Decimal(10, 2)
-  envio                Decimal   @default(0.00) @db.Decimal(10, 2)
-  total                Decimal   @default(0.00) @db.Decimal(10, 2)
-  proveedor            String?   @db.VarChar(60)
+  metodo               String     @default("efectivo") @db.VarChar(40)
+  estado               String     @default("pendiente") @db.VarChar(30)
+  referencia           String?    @db.VarChar(120)
+  subtotal             Decimal    @default(0.00) @db.Decimal(12, 2)
+  iva                  Decimal    @default(0.00) @db.Decimal(12, 2)
+  envio                Decimal    @default(0.00) @db.Decimal(12, 2)
+  total                Decimal    @default(0.00) @db.Decimal(12, 2)
+  proveedor            String?    @db.VarChar(60)
   direccionEntrega     Json?
-  estadoEntrega        String    @default("preparando") @db.VarChar(30)
-  fechaEstimadaEntrega DateTime? @db.Date
-  guiaEntrega          String?   @db.VarChar(120)
-  notasEntrega         String?   @db.VarChar(500)
-  repartidorId         Int?      // ID del usuario tipo 4 (Repartidor)
+  estadoEntrega        String     @default("preparando") @db.VarChar(30)
+  fechaEstimadaEntrega DateTime?  @db.Date
+  guiaEntrega          String?    @db.VarChar(120)
+  notasEntrega         String?    @db.VarChar(500)
+  repartidorId         Int? // ID del usuario tipo 4 (Repartidor)
   metadata             Json?
-  fechaRegistro        DateTime  @default(now()) @db.Timestamp(0)
-  fechaActualizacion   DateTime  @default(now()) @db.Timestamp(0)
+  fechaRegistro        DateTime   @default(now()) @db.Timestamp(0)
+  fechaActualizacion   DateTime   @default(now()) @updatedAt @db.Timestamp(0)
 
+  @@unique([usuario, idempotencyKey])
   @@index([estado], map: "idx_tpagos_estado")
   @@index([metodo], map: "idx_tpagos_metodo")
   @@index([usuario], map: "idx_tpagos_usuario")
@@ -97,37 +105,40 @@ model tpedido {
   inventario  Int
   usuario     Int
   cantidad    Int
-  subtotal    Float
+  subtotal    Decimal     @db.Decimal(12, 2)
   tinventario tinventario @relation(fields: [inventario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "inventario")
   tusuarios   tusuarios   @relation(fields: [usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "usuario")
 
+  @@unique([usuario, inventario])
   @@index([inventario], map: "inventario_idx")
   @@index([usuario], map: "usuario_idx")
 }
 
 model tproducto_imagenes {
-  id             Int      @id @default(autoincrement())
+  tproductos     tproductos @relation(fields: [producto], references: [id])
+  id             Int        @id @default(autoincrement())
   producto       Int
-  ruta           String   @db.VarChar(500)
-  nombreOriginal String?  @db.VarChar(255)
-  esPrincipal    Int      @default(0) @db.SmallInt
-  orden          Int      @default(0)
-  fechaRegistro  DateTime @default(now()) @db.Timestamp(0)
+  ruta           String     @db.VarChar(500)
+  nombreOriginal String?    @db.VarChar(255)
+  esPrincipal    Int        @default(0) @db.SmallInt
+  orden          Int        @default(0)
+  fechaRegistro  DateTime   @default(now()) @db.Timestamp(0)
 
   @@index([orden], map: "idx_tproducto_imagenes_orden")
   @@index([producto], map: "idx_tproducto_imagenes_producto")
 }
 
 model tproductos {
-  id           Int           @id @default(autoincrement())
+  imagenes     tproducto_imagenes[]
+  id           Int                  @id @default(autoincrement())
   estatus      Int
-  nombre       String        @db.VarChar(45)
-  detalles     String        @db.VarChar(450)
-  categoria    String        @db.VarChar(45)
-  precioCompra Float
-  precioVenta  Float
-  imagen       String        @db.VarChar(450)
-  imagenUrl    String?       @db.VarChar(500)
+  nombre       String               @db.VarChar(45)
+  detalles     String               @db.VarChar(450)
+  categoria    String               @db.VarChar(45)
+  precioCompra Decimal              @db.Decimal(12, 2)
+  precioVenta  Decimal              @db.Decimal(12, 2)
+  imagen       String               @db.VarChar(450)
+  imagenUrl    String?              @db.VarChar(500)
   tinventario  tinventario[]
   tventas      tventas[]
 }
@@ -157,6 +168,9 @@ model tsucursales {
 }
 
 model tusuarios {
+  pagos                tpagos[]  @relation("PaymentOwner")
+  entregas             tpagos[]  @relation("PaymentCourier")
+  tokenVersion         Int       @default(0)
   id                   Int       @id @default(autoincrement())
   estatus              Int
   tipo                 Int
@@ -165,7 +179,7 @@ model tusuarios {
   fechaNacimiento      String    @db.VarChar(10)
   genero               String    @db.VarChar(45)
   telefono             String    @db.VarChar(10)
-  correo               String    @db.VarChar(45)
+  correo               String    @unique @db.VarChar(254)
   domicilio            String    @db.VarChar(450)
   ciudad               String?   @db.VarChar(120)
   estadoDireccion      String?   @db.VarChar(120)
@@ -180,15 +194,20 @@ model tusuarios {
 }
 
 model tventas {
-  id            Int        @id @default(autoincrement())
-  usuario       Int
-  pago          Int?
-  producto      Int
-  cantidad      Int
-  total         Float
-  fechaRegistro DateTime?  @default(now()) @db.Timestamp(0)
-  tusuarios     tusuarios  @relation(fields: [usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "idCliente")
-  tproductos    tproductos @relation(fields: [producto], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_idProducto")
+  inventario     Int?
+  sucursal       Int?
+  precioUnitario Decimal?   @db.Decimal(12, 2)
+  costoUnitario  Decimal?   @db.Decimal(12, 2)
+  tpagos         tpagos?    @relation(fields: [pago], references: [id])
+  id             Int        @id @default(autoincrement())
+  usuario        Int
+  pago           Int?
+  producto       Int
+  cantidad       Int
+  total          Decimal    @db.Decimal(12, 2)
+  fechaRegistro  DateTime?  @default(now()) @db.Timestamp(0)
+  tusuarios      tusuarios  @relation(fields: [usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "idCliente")
+  tproductos     tproductos @relation(fields: [producto], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_idProducto")
 
   @@index([producto], map: "idProducto")
   @@index([usuario], map: "id_usuario_idx")

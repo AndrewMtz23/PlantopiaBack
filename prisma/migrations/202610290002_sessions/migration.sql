@@ -1,0 +1,1 @@
+ALTER TABLE "tusuarios" ADD COLUMN "tokenVersion" INTEGER NOT NULL DEFAULT 0;
