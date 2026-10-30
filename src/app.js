@@ -1,9 +1,11 @@
 require("dotenv").config();
+const config = require('./config/env').loadConfig();
 
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const bodyParser = require("body-parser");
+const helmet = require('helmet');
+const { requestContext } = require('./shared/http/requestContext');
 
 // Ya no necesitamos la conexión a MySQL
 // const db = require("./db/connection");
@@ -22,14 +24,16 @@ const createLogRoutes = require("./routes/logs");
 
 const app = express();
 const { errorContract, errorHandler } = require('./middleware/errorHandler');
-const port = Number(process.env.PORT || 3001);
+const port = config.port;
 const publicDirectoryPath = process.env.PUBLIC_PATH || path.join(__dirname, "../public");
 const uploadsDirectoryPath = process.env.UPLOADS_PATH || path.join(__dirname, "../uploads");
 
-app.use(cors());
+app.set('trust proxy', config.trustProxy);
+app.use(requestContext);
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, strictTransportSecurity: process.env.NODE_ENV === 'production' ? undefined : false }));
+app.use(cors({ origin: (origin, done) => done(null, Boolean(origin && config.allowedOrigins.includes(origin))), exposedHeaders: ['X-Request-Id'] }));
 app.use(errorContract);
-app.use(express.json());
-app.use(bodyParser.json());
+app.use(express.json({ limit: config.bodyLimit }));
 app.use(express.static(publicDirectoryPath));
 app.use("/uploads", express.static(uploadsDirectoryPath));
 app.get('/health', (req, res) => res.json({ ok: true }));

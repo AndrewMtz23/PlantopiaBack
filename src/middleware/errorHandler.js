@@ -7,7 +7,7 @@ function errorContract(req, res, next) {
       const status = res.statusCode;
       const raw = typeof body.error === 'string' ? body.error : body.error.message;
       const sensitive = /Prisma|invocation|node_modules|\bSELECT\b|\bINSERT\b|\bUPDATE\b|constraint|Invalid value/i.test(raw || '');
-      body = { error: { code: body.error.code || codes[status] || 'REQUEST_FAILED', message: status >= 500 || sensitive ? messages[status] || messages[500] : raw || messages[status] } };
+      body = { error: { code: body.error.code || codes[status] || 'REQUEST_FAILED', message: status >= 500 || sensitive ? messages[status] || messages[500] : raw || messages[status], requestId: req.requestId } };
     }
     return json(body);
   };
@@ -15,6 +15,7 @@ function errorContract(req, res, next) {
 }
 function errorHandler(error, req, res, next) {
   if (res.headersSent) return next(error);
+  if (error.type === 'entity.too.large') return res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'La solicitud excede el limite permitido.' } });
   const status = error.status || (error.code === 'P2025' ? 404 : error.code === 'P2002' ? 409 : 500);
   res.status(status).json({ error: { code: error.status ? error.code : codes[status], message: error.status ? error.message : messages[status] } });
 }

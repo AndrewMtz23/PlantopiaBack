@@ -66,6 +66,13 @@ Replace all placeholders with your own values. `.env` is excluded from Git.
 | `JWT_EXPIRES_IN` | Token lifetime; default `8h` |
 | `PUBLIC_PATH` / `UPLOADS_PATH` | Optional overrides for asset and upload directories |
 | `AUTH_RATE_LIMIT` | Authentication requests per IP per 15 minutes; default `20` |
+| `ALLOWED_ORIGINS` | Comma-separated frontend origins; required in production (HTTPS only) |
+| `TRUST_PROXY` | `false` by default; explicit trusted proxy IPs or CIDRs only |
+
+Development defaults allow `http://localhost:3000` and `http://127.0.0.1:3000`.
+The JWT secret must contain at least 32 bytes. Invalid configuration prevents startup;
+configuration errors identify the variable without printing its value. JSON requests
+are limited to 100 KiB. API responses include a server-generated `X-Request-Id`.
 
 ### 3. Initialize and run
 
