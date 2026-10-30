@@ -1,104 +1,24 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const mysql = require('mysql2/promise');
-const { PrismaClient } = require('@prisma/client');
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-
-const requireEnv = (name) => {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} no esta configurado.`);
-  }
-
-  return value;
-};
-
-async function migrateData() {
-  console.log('Iniciando migración de datos de MySQL a PostgreSQL...');
-
-  // Conexión a MySQL
-  const mysqlDb = await mysql.createConnection({
-    host: requireEnv('DB_HOST'),
-    user: requireEnv('DB_USER'),
-    password: requireEnv('DB_PASSWORD'),
-    database: requireEnv('DB_NAME'),
-    port: Number(process.env.DB_PORT || 3306),
-  });
-
-  console.log('Conectado a MySQL exitosamente.');
-
+const prisma = require('./src/config/prisma');
+const { importSnapshot, TABLES } = require('./src/db/importSnapshot');
+const { syncAutoIncrementSequences } = require('./src/utils/sequences');
+async function main() {
+  for (const key of ['DATABASE_URL', 'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME']) if (!process.env[key]) throw new Error('Missing migration configuration');
+  const source = await mysql.createConnection({ host: process.env.DB_HOST, user: process.env.DB_USER, password: process.env.DB_PASSWORD, database: process.env.DB_NAME, port: Number(process.env.DB_PORT || 3306), timezone: 'Z' });
   try {
-    // Definir el orden de migración para respetar las llaves foráneas (Foreign Keys)
-    const tables = [
-      'tusuarios',
-      'tproveedores',
-      'tsucursales',
-      'tcategorias',
-      'tproductos',
-      'tinventario',
-      'tpedido',
-      'tlista',
-      'tventas',
-      'tpagos',
-      'tproducto_imagenes',
-      'tlogs'
-    ];
-
-    for (const table of tables) {
-      console.log(`\nMigrando tabla: ${table}...`);
-      
-      const [rows] = await mysqlDb.execute(`SELECT * FROM ${table}`);
-      console.log(`Se encontraron ${rows.length} registros en ${table} (MySQL).`);
-
-      if (rows.length === 0) {
-        console.log(`Tabla ${table} vacía. Saltando...`);
-        continue;
-      }
-
-      // Convertir fechas a objetos Date y Decimales si es necesario para Prisma
-      const formattedRows = rows.map(row => {
-        const formatted = { ...row };
-        // MySQL a veces devuelve TinyInt como Buffer o Number, Prisma espera Boolean a veces o Int.
-        // Aquí lo dejamos como está ya que Prisma se encarga si el tipo coincide (SmallInt/Int).
-        return formatted;
-      });
-
-      // Insertar en PostgreSQL a través de Prisma
-      // Usamos createMany para eficiencia
-      try {
-        const result = await prisma[table].createMany({
-          data: formattedRows,
-          skipDuplicates: true, // Por si acaso se ejecuta dos veces
-        });
-        console.log(`Insertados ${result.count} registros en ${table} (PostgreSQL).`);
-      } catch (insertError) {
-        console.error(`Error al insertar en la tabla ${table}:`, insertError);
-        // Si falla el bloque, intentar de a uno para encontrar el error
-        console.log(`Intentando inserción individual para ${table}...`);
-        let count = 0;
-        for (const row of formattedRows) {
-          try {
-            await prisma[table].create({ data: row });
-            count++;
-          } catch (individualError) {
-             console.error(`Error al insertar registro ID ${row.id} en ${table}:`, individualError.message);
-          }
-        }
-        console.log(`Insertados ${count} registros individualmente en ${table}.`);
-      }
+    await source.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await source.query('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+    const snapshot = {};
+    for (const table of TABLES) [snapshot[table]] = await source.query(`SELECT * FROM ${table}`);
+    const verifyOnly = process.argv.includes('--verify-only');
+    const report = await importSnapshot(prisma, snapshot, { verifyOnly });
+    console.log(JSON.stringify(report, null, 2));
+    if (!report.ok) { process.exitCode = 1; return; }
+    if (!verifyOnly) {
+      const sequences = await syncAutoIncrementSequences();
+      if (sequences.failed.length) { process.exitCode = 1; console.error('Data imported but sequences require reconciliation.'); }
     }
-
-    console.log('\n✅ ¡Migración de datos completada con éxito!');
-  } catch (error) {
-    console.error('Error durante la migración:', error);
-  } finally {
-    await mysqlDb.end();
-    await prisma.$disconnect();
-  }
+  } finally { await source.rollback(); await source.end(); }
 }
-
-migrateData();
+main().catch(() => { console.error('Migration failed; no success claimed. Review configuration and source integrity.'); process.exitCode = 1; }).finally(() => prisma.$disconnect());
