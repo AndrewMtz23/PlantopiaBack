@@ -35,7 +35,7 @@ async function updateDelivery({ paymentId, status, actorId, actorRole, tracking 
       if (payment.metodo !== 'efectivo' || payment.estado !== 'pendiente' || !['preparando', 'listo'].includes(payment.estadoEntrega)) throw conflict();
       const sales = await tx.tventas.findMany({ where: { pago: payment.id } });
       if (!sales.length || sales.some(sale => !sale.inventario)) throw new AppError(409, 'LEGACY_ORDER', 'Pedido historico: requiere conciliacion manual.');
-      for (const sale of sales) await tx.tinventario.update({ where: { id: sale.inventario }, data: { cantidad: { increment: sale.cantidad } } });
+      for (const sale of sales.sort((a, b) => a.inventario - b.inventario)) await require('../modules/inventory/inventoryService').changeStockTx(tx, { inventoryId: sale.inventario, delta: sale.cantidad, sourceType: 'cancellation', sourceId: payment.id, actorId });
       const result = await tx.tpagos.update({ where: { id: payment.id }, data: { estado: 'cancelado', estadoEntrega: 'cancelado' } });
       await log(tx, actorId, payment.id, 'cancelar_pedido');
       return result;

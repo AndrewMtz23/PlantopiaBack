@@ -29,6 +29,11 @@ test('shared transactions retry serialization conflicts but not validation or un
   let calls = 0;
   const value = await withTransaction(async () => {}, { client: { $transaction: async () => { if (++calls < 3) throw Object.assign(new Error('retry'), { code: 'P2034' }); return 42; } } });
   assert.equal(value, 42); assert.equal(calls, 3);
+  for (const sqlState of ['40001', '40P01']) {
+    let rawCalls = 0;
+    const result = await withTransaction(async () => {}, { client: { $transaction: async () => { if (++rawCalls === 1) throw Object.assign(new Error('raw conflict'), { code: 'P2010', meta: { driverAdapterError: { cause: { originalCode: sqlState } } } }); return 7; } } });
+    assert.equal(result, 7); assert.equal(rawCalls, 2);
+  }
 });
 test('a database audit failure rolls back cash collection and cancellation stock restoration', async () => {
   const { confirmCashPayment, updateDelivery } = require('../src/services/PaymentStateService');

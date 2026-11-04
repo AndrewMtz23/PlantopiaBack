@@ -64,8 +64,7 @@ async function checkout({ userId, idempotencyKey, payload }) {
       subtotal: quote.subtotal, iva: quote.iva, envio: quote.envio, total: quote.total,
       idempotencyKey, requestHash, direccionEntrega: address } });
     for (const [index, item] of quote.items.entries()) {
-      const updated = await tx.tinventario.updateMany({ where: { id: item.inventario, estatus: 1, cantidad: { gte: item.cantidad } }, data: { cantidad: { decrement: item.cantidad } } });
-      if (updated.count !== 1) throw new AppError(409, 'OUT_OF_STOCK', 'Stock insuficiente.');
+      await require('../modules/inventory/inventoryService').changeStockTx(tx, { inventoryId: item.inventario, delta: -item.cantidad, sourceType: 'checkout', sourceId: payment.id, actorId: Number(userId) });
       await tx.tventas.create({ data: { usuario: Number(userId), pago: payment.id, producto: item.producto, inventario: item.inventario, sucursal: item.sucursal,
         cantidad: item.cantidad, total: item.subtotal, precioUnitario: item.precioVenta,
         costoUnitario: quote.rows[index].tinventario.tproductos.precioCompra } });

@@ -76,82 +76,15 @@ class ProductService {
   }
 
   async createInventory(payload, requestIp, adminId) {
-    const inventory = await InventoryRepository.create({
-      estatus: Number(payload.estatus) || 1,
-      sucursal: Number(payload.sucursal),
-      proveedor: Number(payload.proveedor),
-      producto: Number(payload.producto),
-      cantidad: Number(payload.cantidad) || 0
-    });
-
-    await writeActivityLog(null, {
-      usuario: adminId,
-      modulo: "inventario",
-      accion: "crear_inventario",
-      descripcion: `Se creo el inventario #${inventory.id}.`,
-      entidad: "tinventario",
-      entidadId: inventory.id,
-      nivel: "info",
-      ip: requestIp,
-    });
-
-    return inventory;
+    return require('../modules/inventory/inventoryService').createInventory(payload, adminId);
   }
 
   async updateInventory(id, payload, requestIp, adminId) {
-    const inventoryId = Number(id);
-    if (!Number.isInteger(inventoryId) || inventoryId <= 0) {
-      throw new Error('Id de inventario invalido.');
-    }
-
-    const existing = await InventoryRepository.findById(inventoryId);
-    if (!existing) throw new Error('Inventario no encontrado.');
-
-    const updated = await InventoryRepository.update(inventoryId, {
-      estatus: payload.estatus !== undefined ? Number(payload.estatus) : existing.estatus,
-      sucursal: payload.sucursal !== undefined ? Number(payload.sucursal) : existing.sucursal,
-      proveedor: payload.proveedor !== undefined ? Number(payload.proveedor) : existing.proveedor,
-      producto: payload.producto !== undefined ? Number(payload.producto) : existing.producto,
-      cantidad: payload.cantidad !== undefined ? Number(payload.cantidad) : existing.cantidad
-    });
-
-    await writeActivityLog(null, {
-      usuario: adminId,
-      modulo: "inventario",
-      accion: "actualizar_inventario",
-      descripcion: `Se actualizo el inventario #${inventoryId}.`,
-      entidad: "tinventario",
-      entidadId: inventoryId,
-      nivel: "info",
-      ip: requestIp,
-    });
-
-    return updated;
+    return require('../modules/inventory/inventoryService').editInventory(id, payload, adminId);
   }
 
   async deactivateInventory(id, requestIp, adminId) {
-    const inventoryId = Number(id);
-    if (!Number.isInteger(inventoryId) || inventoryId <= 0) {
-      throw new Error('Id de inventario invalido.');
-    }
-
-    const existing = await InventoryRepository.findById(inventoryId);
-    if (!existing) throw new Error('Inventario no encontrado.');
-
-    const updated = await InventoryRepository.update(inventoryId, { estatus: 0 });
-
-    await writeActivityLog(null, {
-      usuario: adminId,
-      modulo: "inventario",
-      accion: "desactivar_inventario",
-      descripcion: `Se desactivo el inventario #${inventoryId}.`,
-      entidad: "tinventario",
-      entidadId: inventoryId,
-      nivel: "warning",
-      ip: requestIp,
-    });
-
-    return updated;
+    return require('../modules/inventory/inventoryService').deactivateInventory(id, adminId);
   }
 
   async storeSingleProductImage(file) {
@@ -315,40 +248,10 @@ class ProductService {
 
   // Lógica de Inventario
   async updateStock(payload, requestIp, adminId) {
-    const { productoId, sucursalId, cantidad, operacion } = payload; // operacion: 'set', 'add', 'remove'
-    
-    let inventory = await InventoryRepository.findByProductAndBranch(productoId, sucursalId);
-    
-    let nuevaCantidad = Number(cantidad);
-    
-    if (inventory) {
-      if (operacion === 'add') nuevaCantidad = inventory.cantidad + Number(cantidad);
-      if (operacion === 'remove') nuevaCantidad = inventory.cantidad - Number(cantidad);
-      
-      inventory = await InventoryRepository.update(inventory.id, { cantidad: nuevaCantidad });
-    } else {
-      inventory = await InventoryRepository.create({
-        producto: Number(productoId),
-        sucursal: Number(sucursalId),
-        cantidad: nuevaCantidad,
-        estatus: 1,
-        proveedor: payload.proveedorId || 1 // Default simple
-      });
-    }
-
-    await writeActivityLog(null, {
-      usuario: adminId,
-      modulo: "inventario",
-      accion: "actualizar_stock",
-      descripcion: `Stock actualizado para producto #${productoId} en sucursal #${sucursalId}.`,
-      entidad: "tinventario",
-      entidadId: inventory.id,
-      nivel: "info",
-      ip: requestIp,
-      metadata: { cantidad: nuevaCantidad, operacion }
-    });
-
-    return inventory;
+    const { integer } = require('../modules/inventory/inventoryValidation');
+    const inventory = await InventoryRepository.findByProductAndBranch(integer(payload.productoId, 'producto', 1), integer(payload.sucursalId, 'sucursal', 1));
+    if (!inventory) throw new (require('../utils/AppError'))(404, 'NOT_FOUND', 'Crea el inventario antes de ajustar existencias.');
+    return require('../modules/inventory/inventoryService').adjustStock({ inventoryId: inventory.id, operation: payload.operacion, quantity: payload.cantidad, expectedVersion: payload.expectedVersion, reason: payload.reason, actorId: adminId });
   }
 }
 

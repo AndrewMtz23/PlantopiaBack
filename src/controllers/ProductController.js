@@ -44,39 +44,36 @@ class ProductController {
     }
   }
 
-  async createInventory(req, res) {
+  async createInventory(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       const inventory = await ProductService.createInventory(req.body, requestIp, adminId);
       res.status(201).json(inventory);
     } catch (error) {
-      console.error(error);
-      res.status(400).json({ error: error.message });
+      next(error);
     }
   }
 
-  async updateInventory(req, res) {
+  async updateInventory(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       const updated = await ProductService.updateInventory(req.body.id, req.body, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
-      res.status(400).json({ error: error.message });
+      next(error);
     }
   }
 
-  async deleteInventory(req, res) {
+  async deleteInventory(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       const updated = await ProductService.deactivateInventory(req.params.id, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
-      res.status(400).json({ error: error.message });
+      next(error);
     }
   }
 
@@ -156,15 +153,14 @@ class ProductController {
     }
   }
 
-  async updateStock(req, res) {
+  async updateStock(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       const inventory = await ProductService.updateStock(req.body, requestIp, adminId);
       res.json(inventory);
     } catch (error) {
-      console.error(error);
-      res.status(400).json({ error: error.message });
+      next(error);
     }
   }
 }

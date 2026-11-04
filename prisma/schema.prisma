@@ -24,6 +24,8 @@ model tinventario {
   proveedor    Int
   producto     Int
   cantidad     Int
+  version      Int @default(0)
+  movements    inventoryMovement[]
   tproductos   tproductos   @relation(fields: [producto], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "producto")
   tproveedores tproveedores @relation(fields: [proveedor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "proveedor")
   tsucursales  tsucursales  @relation(fields: [sucursal], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sucursal")
@@ -31,8 +33,26 @@ model tinventario {
   tpedido      tpedido[]
 
   @@index([producto], map: "producto_idx")
+  @@unique([producto, sucursal])
   @@index([proveedor], map: "proveedor_idx")
   @@index([sucursal], map: "sucursal_idx")
+}
+
+model inventoryMovement {
+  id Int @id @default(autoincrement())
+  inventoryId Int
+  inventory tinventario @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
+  before Int
+  after Int
+  delta Int
+  reason String @db.VarChar(250)
+  actorId Int?
+  sourceType String @db.VarChar(30)
+  sourceId Int?
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  @@unique([inventoryId, sourceType, sourceId])
+  @@map("inventory_movements")
 }
 
 model tlista {
