@@ -7,6 +7,7 @@ const UserController = require('../controllers/UserController');
 // Mantenemos la firma para no romper app.js todavía, aunque 'db' ya no se usa aquí.
 const createUserRoutes = (db) => {
   const router = express.Router();
+  for (const name of ['id', 'usuario', 'inventario']) router.param(name, require('../shared/http/validate').validateIdParam);
 
   router.post('/crearUsuario', authenticateToken, requireAdmin, handleProfileImageUpload, UserController.createUser);
   router.get('/verUsuario', authenticateToken, requireAdmin, UserController.getAllUsers);

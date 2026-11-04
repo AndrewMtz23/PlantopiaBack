@@ -4,6 +4,7 @@ const CommerceController = require('../controllers/CommerceController');
 
 const createCommerceRoutes = (db) => {
   const router = express.Router();
+  for (const name of ['id', 'usuario', 'inventario']) router.param(name, require('../shared/http/validate').validateIdParam);
 
   router.get('/carrito/cotizacion', authenticateToken, async (req, res, next) => {
     try { res.json(await require('../services/CheckoutService').getQuote(req.auth.idUsuario)); } catch (error) { next(error); }

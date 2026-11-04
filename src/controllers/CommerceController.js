@@ -2,91 +2,83 @@ const CommerceService = require('../services/CommerceService');
 const { getRequestIp } = require('../utils/activityLog');
 
 class CommerceController {
-  async addToCart(req, res) {
+  async addToCart(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const { inventario, usuario, cantidad, subtotal } = req.body;
       const result = await CommerceService.addToCart(req.auth.idUsuario, inventario, cantidad, subtotal, requestIp);
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: error.message });
+      return next(error);
     }
   }
 
-  async getCart(req, res) {
+  async getCart(req, res, next) {
     try {
       const cart = await CommerceService.getCart(req.params.usuario);
       res.json(cart);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: 'Error al obtener el carrito' });
+      return next(error);
     }
   }
 
-  async updateCartItem(req, res) {
+  async updateCartItem(req, res, next) {
     try {
       const result = await CommerceService.updateCartItem(req.auth.idUsuario, req.body.id, req.body);
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
+      return next(error);
     }
   }
 
-  async deleteCartItem(req, res) {
+  async deleteCartItem(req, res, next) {
     try {
       const result = await CommerceService.deleteCartItem(req.auth.idUsuario, req.params.id);
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
+      return next(error);
     }
   }
 
-  async addToWishlist(req, res) {
+  async addToWishlist(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const { inventario, usuario } = req.body;
       const result = await CommerceService.addToWishlist(req.auth.idUsuario, inventario, requestIp);
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: 'Error al agregar a la lista' });
+      return next(error);
     }
   }
 
-  async getWishlist(req, res) {
+  async getWishlist(req, res, next) {
     try {
       const wishlist = await CommerceService.getWishlist(req.params.usuario);
       res.json(wishlist);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: 'Error al obtener la lista' });
+      return next(error);
     }
   }
 
-  async getWishlistIds(req, res) {
+  async getWishlistIds(req, res, next) {
     try {
       const wishlistIds = await CommerceService.getWishlistIds(req.params.usuario);
       res.json(wishlistIds);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: 'Error al obtener agregados' });
+      return next(error);
     }
   }
 
-  async deleteWishlistItem(req, res) {
+  async deleteWishlistItem(req, res, next) {
     try {
       const result = await CommerceService.deleteWishlistItem(req.auth.idUsuario, req.params.id);
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
+      return next(error);
     }
   }
 
-  async removeInventoryFromWishlist(req, res) {
+  async removeInventoryFromWishlist(req, res, next) {
     try {
       const result = await CommerceService.removeInventoryFromWishlist(
         req.params.usuario,
@@ -94,12 +86,11 @@ class CommerceController {
       );
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
+      return next(error);
     }
   }
 
-  async processPurchase(req, res) {
+  async processPurchase(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const result = await CommerceService.processPurchase(req.auth.idUsuario, req.body, requestIp, req.get('Idempotency-Key'));
@@ -110,22 +101,20 @@ class CommerceController {
         total: result.total
       });
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: error.message });
+      return next(error);
     }
   }
 
-  async getPendingOrders(req, res) {
+  async getPendingOrders(req, res, next) {
     try {
       const orders = await CommerceService.getPendingOrders();
       res.json(orders);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: 'Error al obtener pedidos pendientes' });
+      return next(error);
     }
   }
 
-  async updateDeliveryStatus(req, res) {
+  async updateDeliveryStatus(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const actorId = Number(req.auth?.idUsuario);
@@ -134,41 +123,37 @@ class CommerceController {
       const updated = await CommerceService.updateDeliveryStatus(req.params.id, status, requestIp, actorId, actorRole);
       res.json(updated);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
+      return next(error);
     }
   }
 
-  async getAvailableDeliveries(req, res) {
+  async getAvailableDeliveries(req, res, next) {
     try {
       const deliveries = await CommerceService.getAvailableDeliveries();
       res.json(deliveries);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: 'Error al obtener entregas disponibles' });
+      return next(error);
     }
   }
 
-  async getMyDeliveries(req, res) {
+  async getMyDeliveries(req, res, next) {
     try {
       const repartidorId = Number(req.auth?.idUsuario);
       const deliveries = await CommerceService.getMyDeliveries(repartidorId);
       res.json(deliveries);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || 500).json({ error: 'Error al obtener tus entregas' });
+      return next(error);
     }
   }
 
-  async assignDelivery(req, res) {
+  async assignDelivery(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const repartidorId = Number(req.auth?.idUsuario);
       const result = await CommerceService.assignDelivery(req.params.id, repartidorId, requestIp);
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(error.status || (error.code === "P2025" ? 404 : 400)).json({ error: error.message });
+      return next(error);
     }
   }
 }

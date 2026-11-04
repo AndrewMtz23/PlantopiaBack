@@ -26,6 +26,7 @@ const handleSingleUpload = (req, res, next) => {
 
 const createProductRoutes = (db) => {
   const router = express.Router();
+  for (const name of ['id', 'usuario', 'inventario']) router.param(name, require('../shared/http/validate').validateIdParam);
 
   router.get('/obtenerProductos', ProductController.getCatalogProducts);
   router.get('/productoDetalle/:id(\\d+)', ProductController.getCatalogProductByInventoryId);

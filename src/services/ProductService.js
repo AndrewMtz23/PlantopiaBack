@@ -1,3 +1,5 @@
+const AppError = require('../utils/AppError');
+const { productSchema } = require('../modules/catalog/productSchemas');
 const ProductRepository = require('../repositories/ProductRepository');
 const InventoryRepository = require('../repositories/InventoryRepository');
 const prisma = require('../config/prisma');
@@ -31,17 +33,18 @@ class ProductService {
   }
 
   async createProduct(payload, requestIp, adminId) {
+    payload = productSchema(payload, { create: true });
     const { estatus, nombre, detalles, categoria, precioCompra, precioVenta, imagen, imagenUrl } = payload;
 
-    if (!nombre) throw new Error('El nombre del producto es obligatorio.');
+    if (!nombre) throw new AppError(400, 'INVALID_INPUT', 'El nombre del producto es obligatorio.');
 
     const product = await ProductRepository.create({
       estatus: Number(estatus) || 1,
       nombre,
       detalles: detalles || '',
       categoria,
-      precioCompra: parseFloat(precioCompra) || 0,
-      precioVenta: parseFloat(precioVenta) || 0,
+      precioCompra: precioCompra,
+      precioVenta: precioVenta,
       imagen: imagen || '',
       imagenUrl: imagenUrl || null
     });
@@ -88,7 +91,7 @@ class ProductService {
   }
 
   async storeSingleProductImage(file) {
-    if (!file) throw new Error('No se recibio imagen.');
+    if (!file) throw new AppError(400, 'INVALID_INPUT', 'No se recibio imagen.');
 
     const publicImagesDir = path.join(__dirname, '../../public/images');
     await fs.mkdir(publicImagesDir, { recursive: true });
@@ -105,7 +108,7 @@ class ProductService {
 
   async storeProductGallery(productId, files = []) {
     const product = await ProductRepository.findById(productId);
-    if (!product) throw new Error('Producto no encontrado.');
+    if (!product) throw new AppError(404, 'NOT_FOUND', 'Producto no encontrado.');
 
     const storedImages = await storeProductImages({
       productId: product.id,
@@ -150,7 +153,7 @@ class ProductService {
   async getCatalogProductByInventoryId(inventoryId) {
     const id = Number(inventoryId);
     if (!Number.isInteger(id) || id <= 0) {
-      throw new Error('Id de inventario inválido.');
+      throw new AppError(400, 'INVALID_INPUT', 'Id de inventario inválido.');
     }
 
     const inventory = await prisma.tinventario.findUnique({
@@ -168,7 +171,7 @@ class ProductService {
       }
     });
 
-    if (!inventory || !inventory.tproductos) throw new Error('Producto no encontrado.');
+    if (!inventory || !inventory.tproductos) throw new AppError(404, 'NOT_FOUND', 'Producto no encontrado.');
 
     const product = this.formatCatalogItem(inventory);
     product.disponibilidad = inventory.tproductos.tinventario.map((item) => ({
@@ -184,26 +187,27 @@ class ProductService {
   async getProductById(id) {
     const productId = Number(id);
     if (!Number.isInteger(productId) || productId <= 0) {
-      throw new Error('Id de producto inválido.');
+      throw new AppError(400, 'INVALID_INPUT', 'Id de producto inválido.');
     }
 
     const product = await ProductRepository.findById(id, {
       include: { tinventario: true }
     });
-    if (!product) throw new Error('Producto no encontrado.');
+    if (!product) throw new AppError(404, 'NOT_FOUND', 'Producto no encontrado.');
     return product;
   }
 
   async updateProduct(id, payload, requestIp, adminId) {
+    payload = productSchema(payload);
     const productId = Number(id);
     const existing = await ProductRepository.findById(productId);
-    if (!existing) throw new Error('Producto no encontrado.');
+    if (!existing) throw new AppError(404, 'NOT_FOUND', 'Producto no encontrado.');
 
     const updated = await ProductRepository.update(productId, {
       ...payload,
       estatus: payload.estatus !== undefined ? Number(payload.estatus) : existing.estatus,
-      precioCompra: payload.precioCompra !== undefined ? parseFloat(payload.precioCompra) : existing.precioCompra,
-      precioVenta: payload.precioVenta !== undefined ? parseFloat(payload.precioVenta) : existing.precioVenta
+      precioCompra: payload.precioCompra !== undefined ? payload.precioCompra : existing.precioCompra,
+      precioVenta: payload.precioVenta !== undefined ? payload.precioVenta : existing.precioVenta
     });
 
     await writeActivityLog(null, {
@@ -223,7 +227,7 @@ class ProductService {
   async deactivateProduct(id, requestIp, adminId) {
     const productId = Number(id);
     const existing = await ProductRepository.findById(productId);
-    if (!existing) throw new Error('Producto no encontrado.');
+    if (!existing) throw new AppError(404, 'NOT_FOUND', 'Producto no encontrado.');
 
     const updated = await ProductRepository.update(productId, { estatus: 0 });
 
@@ -242,7 +246,7 @@ class ProductService {
   }
 
   async updateProductFromLegacyPayload(payload, requestIp, adminId) {
-    if (!payload.id) throw new Error('El id del producto es obligatorio.');
+    if (!payload.id) throw new AppError(400, 'INVALID_INPUT', 'El id del producto es obligatorio.');
     return this.updateProduct(payload.id, payload, requestIp, adminId);
   }
 

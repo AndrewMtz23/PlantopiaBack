@@ -5,6 +5,7 @@ const { customerSale, customerPayment } = require('../utils/paymentDto');
 
 const createPaymentRoutes = (db) => {
   const router = express.Router();
+  for (const name of ['id', 'usuario', 'inventario']) router.param(name, require('../shared/http/validate').validateIdParam);
 
   const buildPaymentDetail = async (prisma, pagoId, userId = null) => {
     const where = { id: Number(pagoId) };

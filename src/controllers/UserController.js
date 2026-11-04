@@ -2,41 +2,36 @@ const UserService = require('../services/UserService');
 const { getRequestIp } = require('../utils/activityLog');
 
 class UserController {
-  async createUser(req, res) {
+  async createUser(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       const result = await UserService.createUser(req.body, req.file, requestIp, adminId);
       return res.status(201).json(result);
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('Ya existe') ? 409 : 400;
-      return res.status(status).json({ error: error.message || 'Error al crear el usuario.' });
+      return next(error);
     }
   }
 
-  async getAllUsers(req, res) {
+  async getAllUsers(req, res, next) {
     try {
       const users = await UserService.getAllUsers();
       return res.json(users);
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Error al obtener usuarios' });
+      return next(error);
     }
   }
 
-  async getProfile(req, res) {
+  async getProfile(req, res, next) {
     try {
       const user = await UserService.getProfile(Number(req.auth.idUsuario));
       return res.json({ usuario: user });
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('No encontrado') ? 404 : 500;
-      return res.status(status).json({ error: error.message || 'No se pudo obtener el perfil.' });
+      return next(error);
     }
   }
 
-  async updateProfile(req, res) {
+  async updateProfile(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const updatedUser = await UserService.updateProfile(Number(req.auth.idUsuario), req.body, req.file, requestIp);
@@ -53,60 +48,50 @@ class UserController {
         },
       });
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('Ya existe') ? 409 : (error.message.includes('encontrado') ? 404 : 400);
-      return res.status(status).json({ error: error.message || 'No se pudo actualizar el perfil.' });
+      return next(error);
     }
   }
 
-  async changePassword(req, res) {
+  async changePassword(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const { claveActual, nuevaClave, confirmarClave } = req.body;
       await UserService.changePassword(Number(req.auth.idUsuario), claveActual, nuevaClave, confirmarClave, requestIp);
       return res.json({ ok: true, message: 'Contrasena actualizada correctamente.' });
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('encontrado') ? 404 : (error.message.includes('correcta') ? 401 : 400);
-      return res.status(status).json({ error: error.message || 'No se pudo cambiar la contrasena.' });
+      return next(error);
     }
   }
 
-  async getUserById(req, res) {
+  async getUserById(req, res, next) {
     try {
       const isAdmin = Number(req.auth?.tipo) === 1;
       const user = await UserService.getUserById(req.params.id, req.auth?.idUsuario, isAdmin);
       return res.json(user);
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('No puedes') ? 403 : (error.message.includes('encontrado') ? 404 : 500);
-      return res.status(status).json({ error: error.message || 'Error al obtener el usuario' });
+      return next(error);
     }
   }
 
-  async updateUser(req, res) {
+  async updateUser(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       const updatedUser = await UserService.updateUser(req.body.id, req.body, req.file, requestIp, adminId);
       return res.json(updatedUser);
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('Ya existe') ? 409 : (error.message.includes('encontrado') ? 404 : 400);
-      return res.status(status).json({ error: error.message || 'Error al editar el usuario.' });
+      return next(error);
     }
   }
 
-  async deleteUser(req, res) {
+  async deleteUser(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       await UserService.deleteUser(req.params.id, adminId, requestIp);
       return res.json({ ok: true, deactivatedId: Number(req.params.id), estatus: 0 });
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('inactivo') ? 409 : (error.message.includes('encontrado') ? 404 : 400);
-      return res.status(status).json({ error: error.message || 'Error al desactivar el usuario.' });
+      return next(error);
     }
   }
 }

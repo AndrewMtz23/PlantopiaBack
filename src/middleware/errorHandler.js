@@ -6,8 +6,8 @@ function errorContract(req, res, next) {
     if (res.statusCode >= 400 && body?.error) {
       const status = res.statusCode;
       const raw = typeof body.error === 'string' ? body.error : body.error.message;
-      const sensitive = /Prisma|invocation|node_modules|\bSELECT\b|\bINSERT\b|\bUPDATE\b|constraint|Invalid value/i.test(raw || '');
-      body = { error: { code: body.error.code || codes[status] || 'REQUEST_FAILED', message: status >= 500 || sensitive ? messages[status] || messages[500] : raw || messages[status], requestId: req.requestId } };
+      const structured = typeof body.error === 'object';
+      body = { error: { code: body.error.code || codes[status] || 'REQUEST_FAILED', message: status >= 500 || !structured ? messages[status] || messages[500] : raw || messages[status], ...(body.error.fields ? { fields: body.error.fields } : {}), requestId: req.requestId } };
     }
     return json(body);
   };
@@ -17,7 +17,8 @@ function errorHandler(error, req, res, next) {
   if (res.headersSent) return next(error);
   if (error.type === 'entity.too.large') return res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'La solicitud excede el limite permitido.' } });
   if (['P1001', 'P1002', 'P1008', 'P1017', 'P2024', 'ECONNREFUSED', 'ECONNRESET'].includes(error.code)) return res.status(503).json({ error: { code: 'DEPENDENCY_UNAVAILABLE', message: 'Servicio temporalmente no disponible.' } });
-  const status = error.status || (error.code === 'P2025' ? 404 : error.code === 'P2002' ? 409 : 500);
-  res.status(status).json({ error: { code: error.status ? error.code : codes[status], message: error.status ? error.message : messages[status] } });
+  const typed = error instanceof require('../utils/AppError');
+  const status = typed ? error.status : error.type === 'entity.parse.failed' ? 400 : error.code === 'P2025' ? 404 : ['P2002', 'P2003'].includes(error.code) ? 409 : 500;
+  res.status(status).json({ error: { code: typed ? error.code : codes[status], message: typed ? error.message : messages[status], ...(typed && error.fields ? { fields: error.fields } : {}) } });
 }
 module.exports = { errorContract, errorHandler };

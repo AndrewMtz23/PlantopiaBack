@@ -4,6 +4,7 @@ const ProductController = require('../controllers/ProductController');
 
 const createInventoryRoutes = (db) => {
   const router = express.Router();
+  for (const name of ['id', 'usuario', 'inventario']) router.param(name, require('../shared/http/validate').validateIdParam);
 
   router.get('/verInventario', authenticateToken, authorizeRole([1, 3]), ProductController.getAllInventory);
   router.post('/crearInventario', authenticateToken, authorizeRole([1, 3]), ProductController.createInventory);

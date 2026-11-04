@@ -1,3 +1,4 @@
+const { userSchema, loginSchema } = require('../modules/identity/userSchemas');
 const AppError = require('../utils/AppError');
 const UserRepository = require('../repositories/UserRepository');
 const { comparePassword } = require('../utils/passwords');
@@ -10,7 +11,6 @@ class AuthService {
   createSessionPayload(user) {
     return {
       idUsuario: user.id,
-      tokenVersion: user.tokenVersion,
       tipo: user.tipo,
       nombre: user.nombre,
       correo: user.correo,
@@ -19,6 +19,7 @@ class AuthService {
   }
 
   async login(correo, clave, requestIp) {
+    loginSchema({ correo, clave });
     const normalizedEmail = normalizeEmail(correo);
     const validationError = validateLoginPayload({ correo, clave });
 
@@ -58,7 +59,7 @@ class AuthService {
     }
 
     const session = this.createSessionPayload(user);
-    const token = signAuthToken(session);
+    const token = signAuthToken({ ...session, tokenVersion: user.tokenVersion });
 
     await writeActivityLog(null, {
       usuario: user.id,
@@ -76,6 +77,7 @@ class AuthService {
   }
 
   async register(payload, requestIp) {
+    payload = userSchema(payload, { create: true });
     // Forzamos estatus 1 y tipo 2 (Cliente) para registros públicos
     const dataToCreate = {
       ...payload,
@@ -94,7 +96,7 @@ class AuthService {
   async getMe(userId) {
     const user = await UserRepository.findById(userId);
     if (!user || user.estatus !== 1) {
-      throw new Error("La sesion ya no es valida.");
+      throw new AppError(401, "INVALID_SESSION", "La sesion ya no es valida.");
     }
     return this.createSessionPayload(user);
   }

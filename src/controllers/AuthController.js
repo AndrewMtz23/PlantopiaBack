@@ -18,7 +18,7 @@ class AuthController {
     }
   }
 
-  async register(req, res) {
+  async register(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const idUsuario = await AuthService.register(req.body, requestIp);
@@ -28,19 +28,16 @@ class AuthController {
         idUsuario,
       });
     } catch (error) {
-      console.error(error);
-      const status = error.message.includes('Ya existe') ? 409 : 400;
-      return res.status(status).json({ error: error.message || "No se pudo registrar el usuario." });
+      return next(error);
     }
   }
 
-  async getMe(req, res) {
+  async getMe(req, res, next) {
     try {
       const session = await AuthService.getMe(req.auth.idUsuario);
       return res.json({ session });
     } catch (error) {
-      console.error(error);
-      return res.status(401).json({ error: error.message || "No se pudo validar la sesion." });
+      return next(error);
     }
   }
 }

@@ -1,3 +1,5 @@
+const AppError = require('../utils/AppError');
+const { userSchema } = require('../modules/identity/userSchemas');
 const { withTransaction } = require('../infrastructure/db/transaction');
 const { changeAccountAccess } = require('../modules/identity/accountPolicy');
 const { appendAudit } = require('../modules/audit/auditService');
@@ -14,7 +16,7 @@ const normalizeCoordinate = (value, { min, max, label }) => {
 
   const coordinate = Number(value);
   if (!Number.isFinite(coordinate) || coordinate < min || coordinate > max) {
-    throw new Error(`${label} no es valida.`);
+    throw new AppError(400, 'INVALID_INPUT', `${label} no es valida.`);
   }
 
   return Number(coordinate.toFixed(8));
@@ -36,7 +38,7 @@ const normalizeLocation = ({ latitud, longitud }) => {
     (normalizedLatitude === null && normalizedLongitude !== null) ||
     (normalizedLatitude !== null && normalizedLongitude === null)
   ) {
-    throw new Error("Completa latitud y longitud para guardar la ubicacion.");
+    throw new AppError(400, 'INVALID_INPUT', "Completa latitud y longitud para guardar la ubicacion.");
   }
 
   return {
@@ -52,6 +54,7 @@ const hasLocationInput = (payload = {}) => (
 
 class UserService {
   async createUser(payload, file, requestIp, adminId) {
+    payload = userSchema(payload, { admin: true, create: true });
     const {
       estatus,
       tipo,
@@ -90,14 +93,14 @@ class UserService {
     const validationError = validateUserPayload(normalizedPayload);
     if (validationError) {
       if (file) await cleanupTempFile(file);
-      throw new Error(validationError);
+      throw new AppError(400, 'INVALID_INPUT', validationError);
     }
 
     // Verificar duplicado
     const existingUser = await UserRepository.findByEmail(normalizedPayload.correo);
     if (existingUser) {
       if (file) await cleanupTempFile(file);
-      throw new Error('Ya existe un usuario con ese correo.');
+      throw new AppError(409, 'CONFLICT', 'Ya existe un usuario con ese correo.');
     }
 
     const hashedPassword = await hashPassword(clave);
@@ -144,7 +147,7 @@ class UserService {
       metadata: { tipo: newUser.tipo, estatus: newUser.estatus, correo: newUser.correo, fotoPerfil },
     });
 
-    const { clave: _secret, ...safeUser } = newUser;
+    const { clave: _secret, tokenVersion: _version, ...safeUser } = newUser;
     return { ...safeUser, fotoPerfil };
   }
 
@@ -173,13 +176,13 @@ class UserService {
 
   async getProfile(userId) {
     const user = await UserRepository.getProfile(userId);
-    if (!user || user.estatus !== 1) throw new Error('Usuario no encontrado.');
+    if (!user || user.estatus !== 1) throw new AppError(404, 'NOT_FOUND', 'Usuario no encontrado.');
     return user;
   }
 
   async getUserById(userId, requesterId, isAdmin) {
     if (!isAdmin && Number(userId) !== Number(requesterId)) {
-      throw new Error('No puedes consultar otro usuario.');
+      throw new AppError(403, 'FORBIDDEN', 'No puedes consultar otro usuario.');
     }
     const user = await UserRepository.findById(userId, {
       select: {
@@ -201,34 +204,35 @@ class UserService {
         fotoPerfil: true
       }
     });
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) throw new AppError(404, 'NOT_FOUND', 'Usuario no encontrado');
     return user;
   }
 
   async updateProfile(userId, payload, file, requestIp) {
+    payload = userSchema(payload, {});
     const { nombre, fechaNacimiento, genero, telefono, correo, domicilio, ciudad = "", estadoDireccion = "", codigoPostal = "", referenciasDomicilio = "" } = payload;
     const normalizedEmail = normalizeEmail(correo || "");
     const normalizedPostalCode = String(codigoPostal || "").replace(/\D/g, "");
 
     // Validaciones
-    if (!nombre || String(nombre).trim().length < 3) throw new Error("El nombre debe tener al menos 3 caracteres.");
-    if (!fechaNacimiento) throw new Error("La fecha de nacimiento es obligatoria.");
-    if (!genero) throw new Error("Selecciona un genero valido.");
-    if (!telefono || String(telefono).replace(/\D/g, "").length < 10) throw new Error("El telefono debe tener al menos 10 digitos.");
-    if (!normalizedEmail) throw new Error("El correo es obligatorio.");
-    if (!domicilio || String(domicilio).trim().length < 8) throw new Error("El domicilio debe tener al menos 8 caracteres.");
-    if (normalizedPostalCode && (normalizedPostalCode.length < 5 || normalizedPostalCode.length > 10)) throw new Error("El codigo postal debe tener entre 5 y 10 digitos.");
+    if (!nombre || String(nombre).trim().length < 3) throw new AppError(400, 'INVALID_INPUT', "El nombre debe tener al menos 3 caracteres.");
+    if (!fechaNacimiento) throw new AppError(400, 'INVALID_INPUT', "La fecha de nacimiento es obligatoria.");
+    if (!genero) throw new AppError(400, 'INVALID_INPUT', "Selecciona un genero valido.");
+    if (!telefono || String(telefono).replace(/\D/g, "").length < 10) throw new AppError(400, 'INVALID_INPUT', "El telefono debe tener al menos 10 digitos.");
+    if (!normalizedEmail) throw new AppError(400, 'INVALID_INPUT', "El correo es obligatorio.");
+    if (!domicilio || String(domicilio).trim().length < 8) throw new AppError(400, 'INVALID_INPUT', "El domicilio debe tener al menos 8 caracteres.");
+    if (normalizedPostalCode && (normalizedPostalCode.length < 5 || normalizedPostalCode.length > 10)) throw new AppError(400, 'INVALID_INPUT', "El codigo postal debe tener entre 5 y 10 digitos.");
 
     const existingUsers = await UserRepository.findAll({ where: { correo: normalizedEmail, id: { not: Number(userId) } } });
     if (existingUsers.length > 0) {
       if (file) await cleanupTempFile(file);
-      throw new Error("Ya existe otro usuario con ese correo.");
+      throw new AppError(409, 'CONFLICT', "Ya existe otro usuario con ese correo.");
     }
 
     const previousUser = await UserRepository.findById(userId);
     if (!previousUser || previousUser.estatus !== 1) {
       if (file) await cleanupTempFile(file);
-      throw new Error("Usuario no encontrado.");
+      throw new AppError(404, 'NOT_FOUND', "Usuario no encontrado.");
     }
 
     const location = hasLocationInput(payload)
@@ -282,16 +286,19 @@ class UserService {
   }
 
   async changePassword(userId, claveActual, nuevaClave, confirmarClave, requestIp) {
-    if (!claveActual || !nuevaClave || !confirmarClave) throw new Error("Completa todos los campos de contrasena.");
-    if (String(nuevaClave).length < 8) throw new Error("La nueva contrasena debe tener al menos 8 caracteres.");
-    if (nuevaClave !== confirmarClave) throw new Error("La confirmacion no coincide con la nueva contrasena.");
-    if (claveActual === nuevaClave) throw new Error("La nueva contrasena debe ser diferente a la actual.");
+    for (const [field, value] of Object.entries({ claveActual, nuevaClave, confirmarClave })) {
+      if (typeof value !== 'string' || Buffer.byteLength(value) > 72) require('../shared/http/validate').invalid(field);
+    }
+    if (!claveActual || !nuevaClave || !confirmarClave) throw new AppError(400, 'INVALID_INPUT', "Completa todos los campos de contrasena.");
+    if (String(nuevaClave).length < 8) throw new AppError(400, 'INVALID_INPUT', "La nueva contrasena debe tener al menos 8 caracteres.");
+    if (nuevaClave !== confirmarClave) throw new AppError(400, 'INVALID_INPUT', "La confirmacion no coincide con la nueva contrasena.");
+    if (claveActual === nuevaClave) throw new AppError(400, 'INVALID_INPUT', "La nueva contrasena debe ser diferente a la actual.");
 
     const user = await UserRepository.findById(userId);
-    if (!user || user.estatus !== 1) throw new Error("Usuario no encontrado.");
+    if (!user || user.estatus !== 1) throw new AppError(404, 'NOT_FOUND', "Usuario no encontrado.");
 
     const isCurrentValid = await comparePassword(claveActual, user.clave);
-    if (!isCurrentValid) throw new Error("La contrasena actual no es correcta.");
+    if (!isCurrentValid) throw new AppError(401, 'INVALID_CREDENTIALS', "La contrasena actual no es correcta.");
 
     const hashedPassword = await hashPassword(nuevaClave);
     await UserRepository.update(userId, { clave: hashedPassword, tokenVersion: { increment: 1 } });
@@ -312,6 +319,7 @@ class UserService {
   }
 
   async updateUser(userId, payload, file, requestIp, adminId) {
+    payload = userSchema(payload, { admin: true });
     const {
       estatus,
       tipo,
@@ -330,19 +338,19 @@ class UserService {
     const normalizedEmail = normalizeEmail(correo || "");
     const normalizedPostalCode = String(codigoPostal || "").replace(/\D/g, "");
 
-    if (!nombre || String(nombre).trim().length < 3) throw new Error("El nombre debe tener al menos 3 caracteres.");
-    if (!normalizedEmail) throw new Error("El correo es obligatorio.");
+    if (!nombre || String(nombre).trim().length < 3) throw new AppError(400, 'INVALID_INPUT', "El nombre debe tener al menos 3 caracteres.");
+    if (!normalizedEmail) throw new AppError(400, 'INVALID_INPUT', "El correo es obligatorio.");
 
     const existingUsers = await UserRepository.findAll({ where: { correo: normalizedEmail, id: { not: Number(userId) } } });
     if (existingUsers.length > 0) {
       if (file) await cleanupTempFile(file);
-      throw new Error("Ya existe otro usuario con ese correo.");
+      throw new AppError(409, 'CONFLICT', "Ya existe otro usuario con ese correo.");
     }
 
     const previousUser = await UserRepository.findById(userId);
     if (!previousUser) {
       if (file) await cleanupTempFile(file);
-      throw new Error("Usuario no encontrado.");
+      throw new AppError(404, 'NOT_FOUND', "Usuario no encontrado.");
     }
 
     const location = hasLocationInput(payload)

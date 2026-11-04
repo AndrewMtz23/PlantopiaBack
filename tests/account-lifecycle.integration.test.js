@@ -12,7 +12,10 @@ test('password comparison never accepts a plaintext stored password', async () =
 });
 beforeEach(async () => { f = await fixtures(); });
 after(() => prisma.$disconnect());
-const update = (user, values, actorId = f.users[0].id) => UserService.updateUser(user.id, { ...user, clave: '', ...values }, null, null, actorId);
+const update = (user, values, actorId = f.users[0].id) => {
+  const { tokenVersion, fotoPerfil, ...editable } = user;
+  return UserService.updateUser(user.id, { ...editable, clave: '', ...values }, null, null, actorId);
+};
 test('an administrator cannot demote the last active administrator through legacy editing', async () => {
   await assert.rejects(update(f.users[0], { tipo: 2 }), error => error.code === 'LAST_ADMIN');
   assert.equal((await prisma.tusuarios.findUnique({ where: { id: f.users[0].id } })).tipo, 1);

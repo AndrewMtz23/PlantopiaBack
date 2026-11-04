@@ -1,7 +1,7 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\d{10,15}$/;
+const PHONE_REGEX = /^\d{10}$/;
 
-const normalizeEmail = (value = "") => value.trim().toLowerCase();
+const normalizeEmail = (value = "") => typeof value === 'string' ? value.trim().toLowerCase() : '';
 
 const validateLoginPayload = ({ correo, clave }) => {
   if (!correo || !clave) {
