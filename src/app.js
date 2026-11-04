@@ -44,6 +44,8 @@ app.get('/ready', async (req, res, next) => {
 });
 
 // Ahora las rutas no necesitan pasarles el objeto 'db' de MySQL
+app.use('/api/v1', require('./routes/v1').v1());
+app.use(require('./routes/v1').legacyCollections());
 app.use("/auth", createAuthRoutes());
 app.use(createUserRoutes());
 app.use(createBranchRoutes());

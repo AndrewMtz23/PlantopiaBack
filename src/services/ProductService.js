@@ -64,18 +64,11 @@ class ProductService {
   }
 
   async getAllProducts() {
-    return await ProductRepository.findAllWithInventory();
+    return require('../modules/catalog/listService').smallLegacyList('products');
   }
 
   async getAllInventory() {
-    return await InventoryRepository.findAll({
-      orderBy: { id: 'asc' },
-      include: {
-        tproductos: true,
-        tproveedores: true,
-        tsucursales: true
-      }
-    });
+    return require('../modules/catalog/listService').smallLegacyList('inventory');
   }
 
   async createInventory(payload, requestIp, adminId) {
@@ -114,20 +107,7 @@ class ProductService {
   }
 
   async getCatalogProducts() {
-    const inventory = await prisma.tinventario.findMany({
-      where: {
-        estatus: 1,
-        cantidad: { gt: 0 },
-        tproductos: { estatus: 1 }
-      },
-      include: {
-        tproductos: true,
-        tsucursales: true
-      },
-      orderBy: { id: 'asc' }
-    });
-
-    return inventory.map((item) => this.formatCatalogItem(item));
+    return require('../modules/catalog/listService').smallLegacyList('catalog');
   }
 
   async getCatalogProductByInventoryId(inventoryId) {

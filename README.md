@@ -180,3 +180,7 @@ CI validates the codebase. It does not deploy the application or migrate product
 Tokens use HS256 with `JWT_ISSUER=plantopia-api` and `JWT_AUDIENCE=plantopia-web` by default. Older unscoped tokens require a new login. Role or status changes revoke existing sessions, and at least one active administrator must remain.
 
 Run `node scripts/checkLegacyPasswords.js` for a count-only password audit. Applying conversion requires a verified backup, an isolated rehearsal and explicit operational approval; the script documents its guarded `--apply` mode. It is resumable and does not print passwords or hashes. Login accepts bcrypt hashes only. Audit and convert any legacy database before switching it to this version.
+
+### API contract
+
+The versioned API is documented in [OpenAPI](contracts/openapi.yaml). Collections return `{items, page, pageSize, total}`; pages default to 20 records and accept at most 100. Sort by `id` or `-id`. Legacy array aliases return at most 100 records and report `PAGINATION_REQUIRED` for larger collections instead of silently dropping rows. The current frontend reads explicit pages, with a 5000-record ceiling that fails visibly; large installations should use server filters and a paged table interface. Versioned commerce commands reject undocumented fields.

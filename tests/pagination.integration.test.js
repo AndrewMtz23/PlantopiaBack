@@ -1,0 +1,30 @@
+const { test, beforeEach, after } = require('node:test');
+const assert = require('node:assert/strict');
+const { prisma, fixtures } = require('./helpers/fixtures');
+const request = require('supertest');
+const { app } = require('../src/app');
+let f;
+beforeEach(async () => { f = await fixtures(); });
+after(() => prisma.$disconnect());
+const get = url => request(app).get(url).set('Authorization', `Bearer ${f.tokens[0]}`);
+test('versioned lists enforce limits and stable ordering', async () => {
+  for (const query of ['pageSize=1000', 'page=-1', 'sort=clave', 'page=1.5']) assert.equal((await get(`/api/v1/users?${query}`)).status, 400);
+  const first = await get('/api/v1/users?page=1&pageSize=2');
+  const second = await get('/api/v1/users?page=2&pageSize=2');
+  assert.equal(first.status, 200); assert.equal(first.body.total, 4);
+  assert.equal(new Set([...first.body.items, ...second.body.items].map(x => x.id)).size, 4);
+  assert.doesNotMatch(JSON.stringify(first.body), /"clave"|tokenVersion/);
+  assert.equal((await get('/api/v1/users?q=%27%20OR%201%3D1--')).body.total, 0);
+});
+test('list aliases preserve small-array compatibility and never silently truncate', async () => {
+  const legacy = await get('/verUsuario');
+  const modern = await get('/api/v1/users?pageSize=100');
+  assert.equal(modern.status, 200);
+  assert.deepEqual(legacy.body.map(x => x.id), modern.body.items.map(x => x.id));
+  assert.equal((await request(app).get('/api/v1/users').set('Authorization', `Bearer ${f.tokens[1]}`)).status, 403);
+  await prisma.tlogs.createMany({ data: Array.from({ length: 101 }, (_, i) => ({ modulo: 'test', accion: 'test', descripcion: `event ${i}` })) });
+  const tooLarge = await get('/verLogs');
+  assert.equal(tooLarge.status, 409); assert.equal(tooLarge.body.error.code, 'PAGINATION_REQUIRED');
+  assert.equal((await get('/api/v1/logs?pageSize=100')).body.items.length, 100);
+  assert.equal((await get('/api/v1/logs?pageSize=100&page=2')).body.items.length, 1);
+});

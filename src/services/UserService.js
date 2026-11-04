@@ -145,26 +145,7 @@ class UserService {
   }
 
   async getAllUsers() {
-    return await UserRepository.findAll({
-      select: {
-        id: true,
-        estatus: true,
-        tipo: true,
-        nombre: true,
-        fechaNacimiento: true,
-        genero: true,
-        telefono: true,
-        correo: true,
-        domicilio: true,
-        ciudad: true,
-        estadoDireccion: true,
-        codigoPostal: true,
-        referenciasDomicilio: true,
-        latitud: true,
-        longitud: true,
-        fotoPerfil: true
-      }
-    });
+    return require('../modules/catalog/listService').smallLegacyList('users');
   }
 
   async getProfile(userId) {

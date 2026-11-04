@@ -1,0 +1,2424 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Plantopia API",
+    "version": "2.0.0",
+    "description": "PostgreSQL commerce API. Roles: 1 administrator, 2 customer, 3 employee, 4 courier. Ownership is always derived from the authenticated session. Money is serialized as exact decimal strings. Cash orders begin pending; only an administrator can confirm receipt of cash. Cancellation restores inventory once and only for eligible unpaid orders. Online payments are disabled."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "requestId"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Money": {
+        "type": "string",
+        "pattern": "^\\d+\\.\\d{2}$"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/users": {
+      "get": {
+        "operationId": "list_users",
+        "summary": "List users",
+        "description": "Allowed roles: [1].  Stable id ordering. Maximum page size 100. Search strings are treated as data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "-id"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete page with total record count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "operationId": "list_products",
+        "summary": "List products",
+        "description": "Allowed roles: [1, 3].  Stable id ordering. Maximum page size 100. Search strings are treated as data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "-id"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete page with total record count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory": {
+      "get": {
+        "operationId": "list_inventory",
+        "summary": "List inventory",
+        "description": "Allowed roles: [1, 3].  Stable id ordering. Maximum page size 100. Search strings are treated as data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "-id"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete page with total record count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/catalog": {
+      "get": {
+        "operationId": "list_catalog",
+        "summary": "List catalog",
+        "description": "Allowed roles: public.  Stable id ordering. Maximum page size 100. Search strings are treated as data.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "-id"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete page with total record count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments": {
+      "get": {
+        "operationId": "list_payments",
+        "summary": "List payments",
+        "description": "Allowed roles: [1].  Stable id ordering. Maximum page size 100. Search strings are treated as data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "-id"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete page with total record count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs": {
+      "get": {
+        "operationId": "list_logs",
+        "summary": "List logs",
+        "description": "Allowed roles: [1].  Stable id ordering. Maximum page size 100. Search strings are treated as data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "-id"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete page with total record count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/my-payments": {
+      "get": {
+        "operationId": "list_my_payments",
+        "summary": "List my-payments",
+        "description": "Allowed roles: [1, 2, 3, 4]. Only payments owned by the session user. Stable id ordering. Maximum page size 100. Search strings are treated as data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "-id"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete page with total record count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "auth_post__auth_login",
+        "summary": "POST /auth/login",
+        "description": "Public operation. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "auth_post__auth_register",
+        "summary": "POST /auth/register",
+        "description": "Public operation. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "auth_get__auth_me",
+        "summary": "GET /auth/me",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crearUsuario": {
+      "post": {
+        "operationId": "users_post__crearUsuario",
+        "summary": "POST /crearUsuario",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verUsuario": {
+      "get": {
+        "operationId": "users_get__verUsuario",
+        "summary": "GET /verUsuario",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/perfil": {
+      "get": {
+        "operationId": "users_get__perfil",
+        "summary": "GET /perfil",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "users_put__perfil",
+        "summary": "PUT /perfil",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/perfil/password": {
+      "put": {
+        "operationId": "users_put__perfil_password",
+        "summary": "PUT /perfil/password",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verUsuario/{id}": {
+      "get": {
+        "operationId": "users_get__verUsuario__id_",
+        "summary": "GET /verUsuario/{id}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/editarUsuario": {
+      "put": {
+        "operationId": "users_put__editarUsuario",
+        "summary": "PUT /editarUsuario",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eliminarUsuario/{id}": {
+      "delete": {
+        "operationId": "users_delete__eliminarUsuario__id_",
+        "summary": "DELETE /eliminarUsuario/{id}",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/obtenerProductos": {
+      "get": {
+        "operationId": "products_get__obtenerProductos",
+        "summary": "GET /obtenerProductos",
+        "description": "Public operation. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productoDetalle/{id}": {
+      "get": {
+        "operationId": "products_get__productoDetalle__id_",
+        "summary": "GET /productoDetalle/{id}",
+        "description": "Public operation. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/upload": {
+      "post": {
+        "operationId": "products_post__upload",
+        "summary": "POST /upload",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Multipart JPG/PNG/WebP only, maximum 5 MiB each, 20 megapixels, 5 gallery images. Files are decoded and reencoded as WebP.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productoImagenes/{id}": {
+      "post": {
+        "operationId": "products_post__productoImagenes__id_",
+        "summary": "POST /productoImagenes/{id}",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Multipart JPG/PNG/WebP only, maximum 5 MiB each, 20 megapixels, 5 gallery images. Files are decoded and reencoded as WebP.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/verProducto": {
+      "get": {
+        "operationId": "products_get__verProducto",
+        "summary": "GET /verProducto",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crearProducto": {
+      "post": {
+        "operationId": "products_post__crearProducto",
+        "summary": "POST /crearProducto",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editarProducto": {
+      "put": {
+        "operationId": "products_put__editarProducto",
+        "summary": "PUT /editarProducto",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eliminarProducto/{id}": {
+      "delete": {
+        "operationId": "products_delete__eliminarProducto__id_",
+        "summary": "DELETE /eliminarProducto/{id}",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/stock": {
+      "post": {
+        "operationId": "products_post__stock",
+        "summary": "POST /stock",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{id}": {
+      "get": {
+        "operationId": "products_get___id_",
+        "summary": "GET /{id}",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "products_put___id_",
+        "summary": "PUT /{id}",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/verInventario": {
+      "get": {
+        "operationId": "inventory_get__verInventario",
+        "summary": "GET /verInventario",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crearInventario": {
+      "post": {
+        "operationId": "inventory_post__crearInventario",
+        "summary": "POST /crearInventario",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editarInventario": {
+      "put": {
+        "operationId": "inventory_put__editarInventario",
+        "summary": "PUT /editarInventario",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Replacing cantidad requires expectedVersion and a 5-250 character reason. Stale versions return 409 STOCK_CHANGED. Product, branch and supplier cannot be reassigned.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eliminarInventario/{id}": {
+      "delete": {
+        "operationId": "inventory_delete__eliminarInventario__id_",
+        "summary": "DELETE /eliminarInventario/{id}",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/inventario": {
+      "get": {
+        "operationId": "inventory_get__inventario",
+        "summary": "GET /inventario",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventario/update": {
+      "post": {
+        "operationId": "inventory_post__inventario_update",
+        "summary": "POST /inventario/update",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/carrito/cotizacion": {
+      "get": {
+        "operationId": "commerce_get__carrito_cotizacion",
+        "summary": "GET /carrito/cotizacion",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verCarrito/{usuario}": {
+      "get": {
+        "operationId": "commerce_get__verCarrito__usuario_",
+        "summary": "GET /verCarrito/{usuario}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/crearCarrito": {
+      "post": {
+        "operationId": "commerce_post__crearCarrito",
+        "summary": "POST /crearCarrito",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/editarCarrito": {
+      "put": {
+        "operationId": "commerce_put__editarCarrito",
+        "summary": "PUT /editarCarrito",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eliminarCarrito/{id}": {
+      "delete": {
+        "operationId": "commerce_delete__eliminarCarrito__id_",
+        "summary": "DELETE /eliminarCarrito/{id}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/verLista/{usuario}": {
+      "get": {
+        "operationId": "commerce_get__verLista__usuario_",
+        "summary": "GET /verLista/{usuario}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/verAgregados/{usuario}": {
+      "get": {
+        "operationId": "commerce_get__verAgregados__usuario_",
+        "summary": "GET /verAgregados/{usuario}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/crearLista": {
+      "post": {
+        "operationId": "commerce_post__crearLista",
+        "summary": "POST /crearLista",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eliminarLista/{id}": {
+      "delete": {
+        "operationId": "commerce_delete__eliminarLista__id_",
+        "summary": "DELETE /eliminarLista/{id}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/eliminarListaInventario/{usuario}/{inventario}": {
+      "delete": {
+        "operationId": "commerce_delete__eliminarListaInventario__usuario___inventario_",
+        "summary": "DELETE /eliminarListaInventario/{usuario}/{inventario}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "inventario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/procesarCompra": {
+      "post": {
+        "operationId": "commerce_post__procesarCompra",
+        "summary": "POST /procesarCompra",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. The same key and payload return the original order; a changed payload returns 409. The server quoteHash is required. Initial payment state is pendiente. Receipt does not imply payment collected.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "quoteHash",
+                  "metodo",
+                  "direccionEntrega"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "quoteHash": {
+                    "type": "string"
+                  },
+                  "metodo": {
+                    "const": "efectivo"
+                  },
+                  "direccionEntrega": {
+                    "type": "object",
+                    "required": [
+                      "nombre",
+                      "telefono",
+                      "domicilio",
+                      "ciudad",
+                      "estadoDireccion",
+                      "codigoPostal"
+                    ],
+                    "properties": {
+                      "nombre": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "telefono": {
+                        "type": "string",
+                        "pattern": "^[0-9]{10}$"
+                      },
+                      "domicilio": {
+                        "type": "string",
+                        "maxLength": 450
+                      },
+                      "ciudad": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "estadoDireccion": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "codigoPostal": {
+                        "type": "string",
+                        "pattern": "^[0-9]{5}$"
+                      },
+                      "referenciasDomicilio": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "latitud": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitud": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ]
+      }
+    },
+    "/pedidos/pendientes": {
+      "get": {
+        "operationId": "commerce_get__pedidos_pendientes",
+        "summary": "GET /pedidos/pendientes",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pedidos/estado/{id}": {
+      "put": {
+        "operationId": "commerce_put__pedidos_estado__id_",
+        "summary": "PUT /pedidos/estado/{id}",
+        "description": "Requires roles 1, 3, 4. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/reparto/disponibles": {
+      "get": {
+        "operationId": "commerce_get__reparto_disponibles",
+        "summary": "GET /reparto/disponibles",
+        "description": "Requires roles 1, 4. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reparto/mis-entregas": {
+      "get": {
+        "operationId": "commerce_get__reparto_mis_entregas",
+        "summary": "GET /reparto/mis-entregas",
+        "description": "Requires roles 1, 4. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reparto/asignar/{id}": {
+      "post": {
+        "operationId": "commerce_post__reparto_asignar__id_",
+        "summary": "POST /reparto/asignar/{id}",
+        "description": "Requires roles 1, 4. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/verPagos": {
+      "get": {
+        "operationId": "payments_get__verPagos",
+        "summary": "GET /verPagos",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verPago/{id}": {
+      "get": {
+        "operationId": "payments_get__verPago__id_",
+        "summary": "GET /verPago/{id}",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/misPagos/{usuario}": {
+      "get": {
+        "operationId": "payments_get__misPagos__usuario_",
+        "summary": "GET /misPagos/{usuario}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/miPago/{usuario}/{id}": {
+      "get": {
+        "operationId": "payments_get__miPago__usuario___id_",
+        "summary": "GET /miPago/{usuario}/{id}",
+        "description": "Requires authenticated account. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/pagos/{id}/confirmar-efectivo": {
+      "post": {
+        "operationId": "payments_post__pagos__id__confirmar_efectivo",
+        "summary": "POST /pagos/{id}/confirmar-efectivo",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/actualizarSeguimientoPago/{id}": {
+      "put": {
+        "operationId": "payments_put__actualizarSeguimientoPago__id_",
+        "summary": "PUT /actualizarSeguimientoPago/{id}",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/verLogs": {
+      "get": {
+        "operationId": "logs_get__verLogs",
+        "summary": "GET /verLogs",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verLog/{id}": {
+      "get": {
+        "operationId": "logs_get__verLog__id_",
+        "summary": "GET /verLog/{id}",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/dashboardResumen": {
+      "get": {
+        "operationId": "metrics_get__dashboardResumen",
+        "summary": "GET /dashboardResumen",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metricasGenerales": {
+      "get": {
+        "operationId": "metrics_get__metricasGenerales",
+        "summary": "GET /metricasGenerales",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ventasPorSucursal": {
+      "get": {
+        "operationId": "metrics_get__ventasPorSucursal",
+        "summary": "GET /ventasPorSucursal",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed; representation depends on the resource."
+          },
+          "default": {
+            "description": "Typed API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

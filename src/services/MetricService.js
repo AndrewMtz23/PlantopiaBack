@@ -117,93 +117,14 @@ class MetricService {
   }
 
   async getAverageProfitability() {
-    const sales = await prisma.tventas.findMany({
-      where: { tpagos: { estado: 'pagado' } },
-      include: {
-        tproductos: {
-          select: { precioCompra: true, precioVenta: true }
-        }
-      }
-    });
-
-    if (!sales.length) {
-      return 0;
-    }
-
-    const margins = sales.map((sale) => {
-      const revenue = Number(sale.total || 0);
-      const cost = Number(sale.costoUnitario ?? sale.tproductos?.precioCompra ?? 0) * Number(sale.cantidad || 0);
-
-      if (revenue <= 0) {
-        return 0;
-      }
-
-      return ((revenue - cost) / revenue) * 100;
-    });
-
-    return margins.reduce((sum, margin) => sum + margin, 0) / margins.length;
+    const [row] = await prisma.$queryRaw`SELECT COALESCE(AVG(CASE WHEN v.total > 0 THEN (v.total - COALESCE(v."costoUnitario", p."precioCompra", 0) * v.cantidad) / v.total * 100 ELSE 0 END), 0)::text AS margin FROM tventas v JOIN tpagos pay ON pay.id=v.pago JOIN tproductos p ON p.id=v.producto WHERE pay.estado='pagado'`;
+    return Number(row.margin);
   }
 
   async getSalesByBranch() {
-    const sales = await prisma.tventas.findMany({
-      where: { tpagos: { estado: 'pagado' } },
-      include: {
-        tproductos: true
-      },
-      orderBy: { fechaRegistro: 'asc' }
-    });
-
-    if (!sales.length) {
-      return [];
-    }
-
-    const productIds = [...new Set(sales.map((sale) => sale.producto).filter(Boolean))];
-    const inventory = await prisma.tinventario.findMany({
-      where: { producto: { in: productIds } },
-      include: { tsucursales: true }
-    });
-
-    const branchByProduct = new Map();
-    inventory.forEach((item) => {
-      if (!branchByProduct.has(item.producto)) {
-        branchByProduct.set(item.producto, item.tsucursales?.nombre || `Sucursal ${item.sucursal}`);
-      }
-    });
-
-    const grouped = new Map();
-
-    sales.forEach((sale) => {
-      const date = sale.fechaRegistro
-        ? new Date(sale.fechaRegistro).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-      const branch = sale.sucursal ? `Sucursal ${sale.sucursal}` : "Historico sin sucursal registrada";
-      const key = `${date}::${branch}`;
-      const total = Number(sale.total || 0);
-      const cost = Number(sale.costoUnitario ?? sale.tproductos?.precioCompra ?? 0) * Number(sale.cantidad || 0);
-
-      const current = grouped.get(key) || {
-        fecha: date,
-        sucursal: branch,
-        total: 0,
-        costo: 0,
-        cantidad: 0
-      };
-
-      current.total += total;
-      current.costo += cost;
-      current.cantidad += Number(sale.cantidad || 0);
-      grouped.set(key, current);
-    });
-
-    return [...grouped.values()].map((item) => ({
-      fecha: item.fecha,
-      sucursal: item.sucursal,
-      total: Number(item.total.toFixed(2)),
-      cantidad: item.cantidad,
-      rentabilidad: item.total > 0
-        ? Number((((item.total - item.costo) / item.total) * 100).toFixed(2))
-        : 0
-    }));
+    const rows = await prisma.$queryRaw`SELECT to_char(v."fechaRegistro", 'YYYY-MM-DD') AS fecha, CASE WHEN v.sucursal IS NULL THEN 'Historico sin sucursal registrada' ELSE 'Sucursal ' || v.sucursal::text END AS sucursal, SUM(v.total)::text AS total, SUM(v.cantidad)::text AS cantidad, COALESCE((SUM(v.total) - SUM(COALESCE(v."costoUnitario", p."precioCompra", 0) * v.cantidad)) / NULLIF(SUM(v.total), 0) * 100, 0)::text AS rentabilidad FROM tventas v JOIN tpagos pay ON pay.id=v.pago JOIN tproductos p ON p.id=v.producto WHERE pay.estado='pagado' GROUP BY fecha, v.sucursal ORDER BY fecha, v.sucursal LIMIT 1001`;
+    if (rows.length > 1000) throw new (require('../utils/AppError'))(409, 'REPORT_TOO_LARGE', 'El reporte requiere un rango de fechas mas acotado.');
+    return rows.map(row => ({ ...row, cantidad: Number(row.cantidad), rentabilidad: Number(row.rentabilidad) }));
   }
 
   async getRecentLogs(limit = 20, filters = {}) {
@@ -219,7 +140,7 @@ class MetricService {
     }
 
     const logs = await prisma.tlogs.findMany({
-      take: limit,
+      take: Math.min(Math.max(Number(limit) || 20, 1), 100),
       where,
       orderBy: { fechaRegistro: 'desc' },
     });

@@ -72,18 +72,12 @@ const createPaymentRoutes = (db) => {
     }
   });
 
-  router.get('/misPagos/:usuario(\\d+)', authenticateToken, authorizeUserAccess(req => req.params.usuario), async (req, res) => {
-    const prisma = require('../config/prisma');
+  router.get('/misPagos/:usuario(\\d+)', authenticateToken, authorizeUserAccess(req => req.params.usuario), async (req, res, next) => {
     try {
-      const pagos = await prisma.tpagos.findMany({
-        where: { usuario: Number(req.params.usuario) },
-        orderBy: { fechaRegistro: 'desc' }
-      });
-      const enriched = await CommerceService.attachPaymentRelations(pagos, { includeSales: true });
-      res.json(enriched.map(customerPayment));
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+      const service = require('../modules/catalog/listService');
+      const data = req.query.page || req.query.pageSize ? await service.list('payments', req.query, req.auth.idUsuario) : await service.smallLegacyList('payments', {}, req.auth.idUsuario);
+      res.json(data);
+    } catch (error) { next(error); }
   });
 
   router.get('/miPago/:usuario(\\d+)/:id(\\d+)', authenticateToken, authorizeUserAccess(req => req.params.usuario), async (req, res) => {
