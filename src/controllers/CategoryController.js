@@ -9,7 +9,7 @@ class CategoryController {
       const category = await CategoryService.createCategory(req.body, requestIp, adminId);
       res.status(201).json(category);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -20,8 +20,8 @@ class CategoryController {
       const categories = await CategoryService.getAllCategories(includeInactive);
       res.json(categories);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error al obtener categorÃ­as' });
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
+      res.status(500).json({ error: 'Error al obtener categorías' });
     }
   }
 
@@ -30,7 +30,7 @@ class CategoryController {
       const category = await CategoryService.getCategoryById(req.params.id);
       res.json(category);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(404).json({ error: error.message });
     }
   }
@@ -42,7 +42,7 @@ class CategoryController {
       const updated = await CategoryService.updateCategory(req.params.id, req.body, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -54,7 +54,7 @@ class CategoryController {
       const updated = await CategoryService.updateCategory(req.body.id, req.body, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -64,9 +64,9 @@ class CategoryController {
       const requestIp = getRequestIp(req);
       const adminId = Number(req.auth?.idUsuario);
       await CategoryService.deleteCategory(req.params.id, requestIp, adminId);
-      res.json({ message: 'CategorÃ­a desactivada correctamente' });
+      res.json({ message: 'Categoría desactivada correctamente' });
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }

@@ -6,7 +6,7 @@ class MetricController {
       const dashboard = await MetricService.getDashboardSummary();
       res.json(dashboard);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener el dashboard' });
     }
   }
@@ -17,7 +17,7 @@ class MetricController {
       const logs = await MetricService.getRecentLogs(limit, req.query);
       res.json(logs);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener los logs' });
     }
   }
@@ -28,7 +28,7 @@ class MetricController {
       if (!log) return res.status(404).json({ error: 'Log no encontrado' });
       res.json(log);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener el log' });
     }
   }
@@ -38,7 +38,7 @@ class MetricController {
       const sales = await MetricService.getSalesByBranch();
       res.json(sales);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener ventas por sucursal' });
     }
   }

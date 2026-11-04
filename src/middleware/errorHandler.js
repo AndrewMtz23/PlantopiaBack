@@ -15,6 +15,7 @@ function errorContract(req, res, next) {
 }
 function errorHandler(error, req, res, next) {
   if (res.headersSent) return next(error);
+  require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'request_failed', requestId: req.requestId });
   if (error.type === 'entity.too.large') return res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'La solicitud excede el limite permitido.' } });
   if (['P1001', 'P1002', 'P1008', 'P1017', 'P2024', 'ECONNREFUSED', 'ECONNRESET'].includes(error.code)) return res.status(503).json({ error: { code: 'DEPENDENCY_UNAVAILABLE', message: 'Servicio temporalmente no disponible.' } });
   const typed = error instanceof require('../utils/AppError');

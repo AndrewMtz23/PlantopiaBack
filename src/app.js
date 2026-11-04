@@ -39,8 +39,8 @@ app.use('/uploads/tmp', (req, res) => res.status(404).json({ error: 'Recurso no 
 app.use("/uploads", express.static(uploadsDirectoryPath));
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.get('/ready', async (req, res, next) => {
-  try { await require('./config/prisma').$queryRaw`SELECT 1`; res.json({ ok: true }); }
-  catch (error) { next(error); }
+  const result = await require('../scripts/checkReadiness').checkReadiness();
+  res.status(result.ready ? 200 : 503).json({ ok: result.ready });
 });
 
 // Ahora las rutas no necesitan pasarles el objeto 'db' de MySQL
@@ -60,8 +60,7 @@ app.use(createCategoryRoutes());
 app.use(createPaymentRoutes());
 
 app.use((req, res) => {
-  console.warn(`Ruta no encontrada: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
+  res.status(404).json({ error: 'Recurso no encontrado.' });
 });
 
 app.use(errorHandler);

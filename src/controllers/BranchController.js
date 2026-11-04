@@ -10,7 +10,7 @@ class BranchController {
       const branch = await BranchService.createBranch(req.body, requestIp, adminId);
       res.status(201).json(branch);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -20,7 +20,7 @@ class BranchController {
       const branches = await BranchService.getAllBranches();
       res.json(branches);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener sucursales' });
     }
   }
@@ -30,7 +30,7 @@ class BranchController {
       const branches = await BranchService.getPublicBranches();
       res.json(branches);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener sucursales publicas' });
     }
   }
@@ -40,7 +40,7 @@ class BranchController {
       const managers = await BranchService.getManagers();
       res.json(managers);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener gerentes' });
     }
   }
@@ -52,7 +52,7 @@ class BranchController {
       const updated = await BranchService.updateBranch(req.body.id, req.body, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -64,7 +64,7 @@ class BranchController {
       const updated = await BranchService.deactivateBranch(req.params.id, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -77,7 +77,7 @@ class BranchController {
       const provider = await BranchService.createProvider(req.body, requestIp, adminId);
       res.status(201).json(provider);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -87,7 +87,7 @@ class BranchController {
       const providers = await BranchService.getAllProviders();
       res.json(providers);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(500).json({ error: 'Error al obtener proveedores' });
     }
   }
@@ -99,7 +99,7 @@ class BranchController {
       const updated = await BranchService.updateProvider(req.body.id, req.body, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }
@@ -111,7 +111,7 @@ class BranchController {
       const updated = await BranchService.deactivateProvider(req.params.id, requestIp, adminId);
       res.json(updated);
     } catch (error) {
-      console.error(error);
+      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
       res.status(400).json({ error: error.message });
     }
   }

@@ -184,3 +184,9 @@ Run `node scripts/checkLegacyPasswords.js` for a count-only password audit. Appl
 ### API contract
 
 The versioned API is documented in [OpenAPI](contracts/openapi.yaml). Collections return `{items, page, pageSize, total}`; pages default to 20 records and accept at most 100. Sort by `id` or `-id`. Legacy array aliases return at most 100 records and report `PAGINATION_REQUIRED` for larger collections instead of silently dropping rows. The current frontend reads explicit pages, with a 5000-record ceiling that fails visibly; large installations should use server filters and a paged table interface. Versioned commerce commands reject undocumented fields.
+
+### Runtime health
+
+`/health` reports process liveness. `/ready` returns 200 only when the database is reachable and the expected migrations are applied; otherwise it returns 503. Startup checks the same condition without applying migrations. SIGINT/SIGTERM stop accepting requests, drain the listener (10-second deadline), and close the database pool. The pool is limited to 10 connections with a 5-second connection timeout and a 15-second statement timeout.
+
+HTTP logs contain a generated request ID, route template, method, status and duration. Request bodies, raw database errors, credentials and contact data are excluded. CI verifies the OpenAPI response schemas, scans tracked application files for credential patterns, and blocks high/critical dependency advisories. There is no automatic deployment.

@@ -26,10 +26,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: node scripts/scanSecrets.js
       - run: npx prisma validate && npx prisma generate && npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/plantopia_test
       - run: npm test
         env:
           TEST_DATABASE_URL: postgresql://test:test@localhost:5432/plantopia_test
+      - run: node scripts/checkReadiness.js
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/plantopia_test
       - run: npm audit --audit-level=high
