@@ -13,9 +13,12 @@ const getJwtSecret = () => {
 const signAuthToken = (payload) =>
   jwt.sign(payload, getJwtSecret(), {
     expiresIn: JWT_EXPIRES_IN,
+    algorithm: 'HS256',
+    issuer: process.env.JWT_ISSUER || 'plantopia-api',
+    audience: process.env.JWT_AUDIENCE || 'plantopia-web',
   });
 
-const verifyAuthToken = (token) => jwt.verify(token, getJwtSecret());
+const verifyAuthToken = (token) => jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'], issuer: process.env.JWT_ISSUER || 'plantopia-api', audience: process.env.JWT_AUDIENCE || 'plantopia-web' });
 
 module.exports = {
   signAuthToken,

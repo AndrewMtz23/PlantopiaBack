@@ -17,7 +17,7 @@ const comparePassword = async (plainPassword, storedPassword) => {
     return bcrypt.compare(plainPassword, storedPassword);
   }
 
-  return plainPassword === storedPassword;
+  return false;
 };
 
 module.exports = {

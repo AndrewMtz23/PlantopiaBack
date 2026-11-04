@@ -174,3 +174,9 @@ Legacy imports use `migrate_data_mysql_to_pg.js`; `--verify-only` compares MySQL
 Plantopia is under active development. Production requires HTTPS, restricted origins, durable image storage, protected secrets and tested backups. Authentication throttling is per process; multiple replicas require a shared rate-limit store. Validate tax, shipping and delivery rules against the actual business before accepting live orders.
 
 CI validates the codebase. It does not deploy the application or migrate production databases automatically.
+
+### Session scope and legacy accounts
+
+Tokens use HS256 with `JWT_ISSUER=plantopia-api` and `JWT_AUDIENCE=plantopia-web` by default. Older unscoped tokens require a new login. Role or status changes revoke existing sessions, and at least one active administrator must remain.
+
+Run `node scripts/checkLegacyPasswords.js` for a count-only password audit. Applying conversion requires a verified backup, an isolated rehearsal and explicit operational approval; the script documents its guarded `--apply` mode. It is resumable and does not print passwords or hashes. Login accepts bcrypt hashes only. Audit and convert any legacy database before switching it to this version.

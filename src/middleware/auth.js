@@ -16,16 +16,21 @@ const authenticateToken = async (req, res, next) => {
     return res.status(401).json({ error: "Token de acceso requerido." });
   }
 
+  let claims;
   try {
-    const claims = verifyAuthToken(token);
+    claims = verifyAuthToken(token);
     if (!Number.isInteger(claims.idUsuario)) throw new Error('Invalid identity');
+  } catch {
+    return res.status(401).json({ error: 'Token invalido o expirado.' });
+  }
+  try {
     const user = await prisma.tusuarios.findUnique({ where: { id: claims.idUsuario },
       select: { id: true, tipo: true, estatus: true, tokenVersion: true } });
-    if (!user || user.estatus !== 1 || claims.tokenVersion !== user.tokenVersion) throw new Error('Session revoked');
+    if (!user || user.estatus !== 1 || claims.tokenVersion !== user.tokenVersion) return res.status(401).json({ error: 'Token invalido o expirado.' });
     req.auth = { ...claims, tipo: user.tipo };
     return next();
   } catch (error) {
-    return res.status(401).json({ error: "Token invalido o expirado." });
+    return next(new (require('../utils/AppError'))(503, 'AUTH_UNAVAILABLE', 'No se pudo verificar la sesion. Intenta de nuevo.'));
   }
 };
 

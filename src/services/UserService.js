@@ -1,3 +1,6 @@
+const { withTransaction } = require('../infrastructure/db/transaction');
+const { changeAccountAccess } = require('../modules/identity/accountPolicy');
+const { appendAudit } = require('../modules/audit/auditService');
 const UserRepository = require('../repositories/UserRepository');
 const { hashPassword, comparePassword } = require('../utils/passwords');
 const { writeActivityLog } = require('../utils/activityLog');
@@ -360,8 +363,6 @@ class UserService {
     }
 
     const dataToUpdate = {
-      estatus: Number(estatus),
-      tipo: Number(tipo),
       nombre: nombre.trim(),
       fechaNacimiento,
       genero,
@@ -382,46 +383,19 @@ class UserService {
       dataToUpdate.tokenVersion = { increment: 1 };
     }
 
-    const updated = await UserRepository.update(userId, dataToUpdate);
-
-    await writeActivityLog(null, {
-      usuario: adminId || null,
-      modulo: "usuarios",
-      accion: "editar_usuario",
-      descripcion: `Se actualizo el usuario ${previousUser.nombre} (#${userId}).`,
-      entidad: "tusuarios",
-      entidadId: Number(userId),
-      nivel: "info",
-      ip: requestIp,
-      metadata: { antes: { nombre: previousUser.nombre }, despues: { nombre: updated.nombre }, actualizoClave: Boolean(clave), actualizoFoto: Boolean(file) },
+    const updated = await withTransaction(async tx => {
+      await changeAccountAccess(tx, { targetId: userId, actorId: adminId, role: tipo, status: estatus });
+      const result = await tx.tusuarios.update({ where: { id: Number(userId) }, data: dataToUpdate });
+      await appendAudit(tx, { actorId: adminId, action: 'editar_usuario', entity: 'tusuarios', entityId: Number(userId) });
+      return result;
     });
 
-    const { clave: _secret, ...safeUser } = updated;
+    const { clave: _secret, tokenVersion: _version, ...safeUser } = updated;
     return safeUser;
   }
 
   async deleteUser(userId, adminId, requestIp) {
-    if (!Number.isFinite(Number(userId))) throw new Error("Id de usuario invalido.");
-    if (Number(userId) === Number(adminId)) throw new Error("No puedes desactivar tu propia cuenta desde el panel.");
-
-    const user = await UserRepository.findById(userId);
-    if (!user) throw new Error("Usuario no encontrado.");
-    if (user.estatus === 0) throw new Error("El usuario ya se encuentra inactivo.");
-
-    await UserRepository.update(userId, { estatus: 0 });
-
-    await writeActivityLog(null, {
-      usuario: adminId || null,
-      modulo: "usuarios",
-      accion: "desactivar_usuario",
-      descripcion: `Se desactivo el usuario ${user.nombre} (#${userId}).`,
-      entidad: "tusuarios",
-      entidadId: Number(userId),
-      nivel: "warning",
-      ip: requestIp,
-      metadata: { correo: user.correo, estatusAnterior: user.estatus, estatusNuevo: 0 },
-    });
-
+    await withTransaction(tx => changeAccountAccess(tx, { targetId: userId, actorId: adminId, status: 0 }));
     return true;
   }
 }

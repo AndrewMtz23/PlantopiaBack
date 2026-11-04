@@ -2,7 +2,7 @@ const AuthService = require('../services/AuthService');
 const { getRequestIp } = require('../utils/activityLog');
 
 class AuthController {
-  async login(req, res) {
+  async login(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
       const { correo = "", clave = "" } = req.body;
@@ -14,9 +14,7 @@ class AuthController {
         session: result.session,
       });
     } catch (error) {
-      console.error(error);
-      const isAuthError = error.message.includes('incorrectos');
-      return res.status(isAuthError ? 401 : 400).json({ error: error.message || "Error en el servidor." });
+      return next(error);
     }
   }
 

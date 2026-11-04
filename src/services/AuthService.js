@@ -1,5 +1,6 @@
+const AppError = require('../utils/AppError');
 const UserRepository = require('../repositories/UserRepository');
-const { comparePassword, hashPassword, isHashedPassword } = require('../utils/passwords');
+const { comparePassword } = require('../utils/passwords');
 const { signAuthToken } = require('../utils/jwt');
 const { writeActivityLog } = require('../utils/activityLog');
 const { normalizeEmail, validateLoginPayload } = require('../utils/authValidation');
@@ -21,7 +22,7 @@ class AuthService {
     const normalizedEmail = normalizeEmail(correo);
     const validationError = validateLoginPayload({ correo, clave });
 
-    if (validationError) throw new Error(validationError);
+    if (validationError) throw new AppError(400, 'INVALID_INPUT', validationError);
 
     const user = await UserRepository.findByEmail(normalizedEmail);
 
@@ -36,7 +37,7 @@ class AuthService {
         ip: requestIp,
         metadata: { correo: normalizedEmail, motivo: "usuario_inexistente_o_inactivo" },
       });
-      throw new Error("Correo o contrasena incorrectos.");
+      throw new AppError(401, "INVALID_CREDENTIALS", "Correo o contrasena incorrectos.");
     }
 
     const isValidPassword = await comparePassword(clave, user.clave);
@@ -53,17 +54,7 @@ class AuthService {
         ip: requestIp,
         metadata: { correo: user.correo, motivo: "clave_incorrecta" },
       });
-      throw new Error("Correo o contrasena incorrectos.");
-    }
-
-    // Migración de contraseñas legacy a hash
-    if (!isHashedPassword(user.clave)) {
-      try {
-        const hashedPassword = await hashPassword(clave);
-        await UserRepository.update(user.id, { clave: hashedPassword });
-      } catch (hashError) {
-        console.error("Error hasheando clave legacy:", hashError);
-      }
+      throw new AppError(401, "INVALID_CREDENTIALS", "Correo o contrasena incorrectos.");
     }
 
     const session = this.createSessionPayload(user);
