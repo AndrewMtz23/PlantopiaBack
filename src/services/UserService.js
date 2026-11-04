@@ -106,6 +106,7 @@ class UserService {
     const hashedPassword = await hashPassword(clave);
 
     // Crear usuario
+    const fotoPerfil = file ? await storeUserProfileImage({ file }) : null;
     const newUser = await UserRepository.create({
       estatus: normalizedPayload.estatus,
       tipo: normalizedPayload.tipo,
@@ -122,18 +123,10 @@ class UserService {
       referenciasDomicilio: normalizedPayload.referenciasDomicilio,
       latitud: normalizedPayload.latitud,
       longitud: normalizedPayload.longitud,
+      fotoPerfil,
     });
 
-    let fotoPerfil = null;
-    if (file) {
-      fotoPerfil = await storeUserProfileImage({
-        userId: newUser.id,
-        name: newUser.nombre,
-        tempFilePath: file.path,
-        originalName: file.originalname,
-      });
-      await UserRepository.update(newUser.id, { fotoPerfil });
-    }
+    if (file) file.committed = true;
 
     await writeActivityLog(null, {
       usuario: adminId || null,
@@ -245,6 +238,7 @@ class UserService {
     let fotoPerfil = previousUser.fotoPerfil;
     if (file) {
       fotoPerfil = await storeUserProfileImage({
+        file,
         userId,
         name: String(nombre).trim(),
         tempFilePath: file.path,
@@ -268,6 +262,7 @@ class UserService {
       fotoPerfil
     });
 
+    if (file) file.committed = true;
     const updatedUser = await UserRepository.getProfile(userId);
 
     await writeActivityLog(null, {
@@ -363,6 +358,7 @@ class UserService {
     let fotoPerfil = previousUser.fotoPerfil;
     if (file) {
       fotoPerfil = await storeUserProfileImage({
+        file,
         userId,
         name: nombre.trim(),
         tempFilePath: file.path,
@@ -398,6 +394,7 @@ class UserService {
       return result;
     });
 
+    if (file) file.committed = true;
     const { clave: _secret, tokenVersion: _version, ...safeUser } = updated;
     return safeUser;
   }
@@ -408,4 +405,13 @@ class UserService {
   }
 }
 
-module.exports = new UserService();
+const service = new UserService();
+for (const name of ['createUser', 'updateUser', 'updateProfile']) {
+  const method = service[name].bind(service);
+  service[name] = async (...args) => {
+    const file = name === 'createUser' ? args[1] : args[2];
+    try { return await method(...args); }
+    catch (error) { await cleanupTempFile(file); throw error; }
+  };
+}
+module.exports = service;

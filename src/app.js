@@ -35,6 +35,7 @@ app.use(cors({ origin: (origin, done) => done(null, Boolean(origin && config.all
 app.use(errorContract);
 app.use(express.json({ limit: config.bodyLimit }));
 app.use(express.static(publicDirectoryPath));
+app.use('/uploads/tmp', (req, res) => res.status(404).json({ error: 'Recurso no encontrado.' }));
 app.use("/uploads", express.static(uploadsDirectoryPath));
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.get('/ready', async (req, res, next) => {

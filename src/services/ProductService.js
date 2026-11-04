@@ -91,46 +91,26 @@ class ProductService {
   }
 
   async storeSingleProductImage(file) {
-    if (!file) throw new AppError(400, 'INVALID_INPUT', 'No se recibio imagen.');
-
-    const publicImagesDir = path.join(__dirname, '../../public/images');
-    await fs.mkdir(publicImagesDir, { recursive: true });
-    const extension = path.extname(file.originalname || file.path).toLowerCase() || '.jpg';
-    const finalPath = path.join(publicImagesDir, `upload-${Date.now()}${extension}`);
-    await fs.rename(file.path, finalPath);
-
-    return {
-      ok: true,
-      imagePath: `/images/${path.basename(finalPath)}`,
-      url: `/images/${path.basename(finalPath)}`
-    };
+    if (!file) throw new AppError(400, 'INVALID_IMAGE', 'No se recibio imagen.');
+    const stored = await require('../infrastructure/storage/imageStore').validateAndStoreImage(file, { ownerType: 'product' });
+    file.committed = true;
+    const imagePath = `/uploads/${stored.key}`;
+    return { ok: true, imagePath, url: imagePath };
   }
 
   async storeProductGallery(productId, files = []) {
     const product = await ProductRepository.findById(productId);
     if (!product) throw new AppError(404, 'NOT_FOUND', 'Producto no encontrado.');
-
-    const storedImages = await storeProductImages({
-      productId: product.id,
-      name: product.nombre,
-      files
-    });
-
-    const created = [];
-    for (const [index, image] of storedImages.entries()) {
-      const record = await prisma.tproducto_imagenes.create({
-        data: {
-          producto: product.id,
-          ruta: image.ruta,
-          nombreOriginal: image.nombreOriginal,
-          orden: image.orden,
-          esPrincipal: index === 0 ? 1 : 0
-        }
+    try {
+      const stored = await storeProductImages({ files });
+      const created = await require('../infrastructure/db/transaction').withTransaction(async tx => {
+        const rows = [];
+        for (const [index, image] of stored.entries()) rows.push(await tx.tproducto_imagenes.create({ data: { producto: product.id, ...image, esPrincipal: index === 0 ? 1 : 0 } }));
+        return rows;
       });
-      created.push(record);
-    }
-
-    return created;
+      files.forEach(file => { file.committed = true; });
+      return created;
+    } catch (error) { await require('../infrastructure/storage/imageStore').compensate(files); throw error; }
   }
 
   async getCatalogProducts() {
