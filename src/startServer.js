@@ -2,7 +2,9 @@ async function startServer({ prisma, app, port, readiness = require('../scripts/
   await prisma.$connect();
   if (!(await readiness(prisma)).ready) {
     await prisma.$disconnect();
-    throw new Error('Database schema is not ready. Apply reviewed migrations before starting.');
+    const error = new Error('Database schema is not ready. Apply reviewed migrations before starting.');
+    error.code = 'DATABASE_SCHEMA_NOT_READY';
+    throw error;
   }
   const pending = require('./infrastructure/storage/pendingImages');
   const cleanup = () => pending.cleanupPendingImages(prisma).catch(() => require('./infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'image_cleanup_failed' }));
@@ -20,4 +22,10 @@ async function shutdownServer(server, prisma) {
   try { await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
   finally { clearTimeout(deadline); await prisma.$disconnect(); }
 }
-module.exports = { startServer, shutdownServer };
+function startupErrorMessage(error) {
+  if (error?.code === 'DATABASE_SCHEMA_NOT_READY') {
+    return 'Database schema is not ready. Run npx prisma migrate status to inspect pending or failed migrations; back up the database and apply reviewed migrations before restarting.';
+  }
+  return 'Database startup failed. Check PostgreSQL availability and DATABASE_URL configuration.';
+}
+module.exports = { startServer, shutdownServer, startupErrorMessage };
