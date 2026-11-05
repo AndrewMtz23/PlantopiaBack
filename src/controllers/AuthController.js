@@ -21,7 +21,7 @@ class AuthController {
   async register(req, res, next) {
     try {
       const requestIp = getRequestIp(req);
-      const idUsuario = await AuthService.register(req.body, requestIp);
+      const idUsuario = await AuthService.register(req.body, requestIp, { legacy: req.baseUrl === '/auth' });
       
       return res.status(201).json({
         message: "Usuario registrado con exito.",

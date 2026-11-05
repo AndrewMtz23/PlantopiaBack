@@ -107,7 +107,12 @@ class UserService {
 
     // Crear usuario
     const fotoPerfil = file ? await storeUserProfileImage({ file }) : null;
-    const newUser = await UserRepository.create({
+    const newUser = await withTransaction(async tx => {
+      if (adminId) {
+        const actor = await tx.tusuarios.findUnique({ where: { id: Number(adminId) } });
+        if (!actor || actor.estatus !== 1 || actor.tipo !== 1) throw new AppError(403, 'FORBIDDEN', 'Accion exclusiva del administrador.');
+      } else if (normalizedPayload.tipo !== 2 || normalizedPayload.estatus !== 1) throw new AppError(403, 'FORBIDDEN', 'Registro no autorizado.');
+      const created = await tx.tusuarios.create({ data: {
       estatus: normalizedPayload.estatus,
       tipo: normalizedPayload.tipo,
       clave: hashedPassword,
@@ -124,21 +129,11 @@ class UserService {
       latitud: normalizedPayload.latitud,
       longitud: normalizedPayload.longitud,
       fotoPerfil,
+    } });
+      await appendAudit(tx, { actorId: adminId || created.id, action: 'crear_usuario', entity: 'tusuarios', entityId: created.id });
+      return created;
     });
-
     if (file) file.committed = true;
-
-    await writeActivityLog(null, {
-      usuario: adminId || null,
-      modulo: "usuarios",
-      accion: "crear_usuario",
-      descripcion: `Se creo el usuario ${newUser.nombre} (${newUser.correo}).`,
-      entidad: "tusuarios",
-      entidadId: newUser.id,
-      nivel: "info",
-      ip: requestIp,
-      metadata: { tipo: newUser.tipo, estatus: newUser.estatus, correo: newUser.correo, fotoPerfil },
-    });
 
     const { clave: _secret, tokenVersion: _version, ...safeUser } = newUser;
     return { ...safeUser, fotoPerfil };
@@ -277,18 +272,10 @@ class UserService {
     if (!isCurrentValid) throw new AppError(401, 'INVALID_CREDENTIALS', "La contrasena actual no es correcta.");
 
     const hashedPassword = await hashPassword(nuevaClave);
-    await UserRepository.update(userId, { clave: hashedPassword, tokenVersion: { increment: 1 } });
-
-    await writeActivityLog(null, {
-      usuario: userId,
-      modulo: "usuarios",
-      accion: "cambiar_contrasena",
-      descripcion: `El usuario ${user.nombre} cambio su contrasena.`,
-      entidad: "tusuarios",
-      entidadId: userId,
-      nivel: "info",
-      ip: requestIp,
-      metadata: { correo: user.correo },
+    await withTransaction(async tx => {
+      const changed = await tx.tusuarios.updateMany({ where: { id: Number(userId), clave: user.clave, estatus: 1 }, data: { clave: hashedPassword, tokenVersion: { increment: 1 } } });
+      if (changed.count !== 1) throw new AppError(409, 'ACCOUNT_CHANGED', 'La cuenta cambio. Inicia sesion de nuevo.');
+      await appendAudit(tx, { actorId: Number(userId), action: 'cambiar_contrasena', entity: 'tusuarios', entityId: Number(userId) });
     });
 
     return true;

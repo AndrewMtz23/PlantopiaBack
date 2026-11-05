@@ -76,7 +76,12 @@ class AuthService {
     return { token, session };
   }
 
-  async register(payload, requestIp) {
+  async register(payload, requestIp, { legacy = false } = {}) {
+    if (legacy && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      const { tipo, estatus, ...fields } = payload;
+      if ((tipo !== undefined && tipo !== 2) || (estatus !== undefined && estatus !== 1)) require('../shared/http/validate').invalid('tipo');
+      payload = fields;
+    }
     payload = userSchema(payload, { create: true });
     // Forzamos estatus 1 y tipo 2 (Cliente) para registros públicos
     const dataToCreate = {

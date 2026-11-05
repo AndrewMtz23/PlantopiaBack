@@ -33,13 +33,12 @@ class MetricController {
     }
   }
 
-  async getSalesByBranch(req, res) {
+  async getSalesByBranch(req, res, next) {
     try {
-      const sales = await MetricService.getSalesByBranch();
+      const sales = await MetricService.getSalesByBranch(req.query);
       res.json(sales);
     } catch (error) {
-      require('../infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'operation_failed' });
-      res.status(500).json({ error: 'Error al obtener ventas por sucursal' });
+      next(error);
     }
   }
 }

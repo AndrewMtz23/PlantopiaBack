@@ -1,6 +1,6 @@
 const prisma = require('../../config/prisma');
 const allowedMetadata = {
-  ajustar_inventario: ['delta', 'before', 'after', 'reason', 'version'],
+  ajustar_inventario: ['delta', 'before', 'after', 'reason', 'version', 'previousSupplier', 'supplier'],
   crear_inventario: ['after'],
   cambiar_acceso: ['previousRole', 'role', 'previousStatus', 'status'],
 };

@@ -9,15 +9,15 @@ async function authorize(tx, actorId) {
   if (!actor || actor.estatus !== 1 || ![1, 3].includes(actor.tipo)) throw new AppError(403, 'FORBIDDEN', 'No tienes permisos para ajustar inventario.');
 }
 
-async function changeStockTx(tx, { inventoryId, delta, sourceType, sourceId = null, actorId, reason = 'Movimiento de pedido', requestId, expectedVersion, status }) {
+async function changeStockTx(tx, { inventoryId, delta, sourceType, sourceId = null, actorId, reason = 'Movimiento de pedido', requestId, expectedVersion, status, supplier }) {
   const stock = await lockInventory(tx, integer(inventoryId, 'inventario', 1));
   if (expectedVersion !== undefined && stock.version !== expectedVersion) throw new AppError(409, 'STOCK_CHANGED', 'El inventario cambio. Recarga antes de guardar.');
   if (sourceType === 'checkout' && stock.estatus !== 1) throw new AppError(409, 'OUT_OF_STOCK', 'Inventario no disponible.');
   const next = stock.cantidad + delta;
   if (!Number.isInteger(delta) || !Number.isInteger(next) || next < 0 || next > 2147483647) throw new AppError(409, 'OUT_OF_STOCK', 'Cantidad de inventario no disponible.');
-  const updated = await tx.tinventario.update({ where: { id: stock.id }, data: { cantidad: next, version: { increment: 1 }, ...(status === undefined ? {} : { estatus: status }) } });
+  const updated = await tx.tinventario.update({ where: { id: stock.id }, data: { cantidad: next, version: { increment: 1 }, ...(status === undefined ? {} : { estatus: status }), ...(supplier === undefined ? {} : { proveedor: supplier }) } });
   await tx.inventoryMovement.create({ data: { inventoryId: stock.id, before: stock.cantidad, after: next, delta, reason, actorId, sourceType, sourceId } });
-  await appendAudit(tx, { actorId, action: 'ajustar_inventario', entity: 'tinventario', entityId: stock.id, requestId, metadata: { before: stock.cantidad, after: next, delta, reason, version: updated.version } });
+  await appendAudit(tx, { actorId, action: 'ajustar_inventario', entity: 'tinventario', entityId: stock.id, requestId, metadata: { before: stock.cantidad, after: next, delta, reason, version: updated.version, previousSupplier: stock.proveedor, supplier: updated.proveedor } });
   return updated;
 }
 
@@ -39,14 +39,14 @@ async function editInventory(id, payload, actorId) {
   return withTransaction(async tx => {
     await authorize(tx, actorId);
     const stock = await lockInventory(tx, integer(id, 'inventario', 1));
-    for (const key of ['producto', 'sucursal', 'proveedor']) {
-      if (payload[key] !== undefined && integer(payload[key], key, 1) !== stock[key]) throw new AppError(409, 'IMMUTABLE_INVENTORY', 'Crea un inventario nuevo para cambiar producto, sucursal o proveedor.');
+    for (const key of ['producto', 'sucursal']) {
+      if (payload[key] !== undefined && integer(payload[key], key, 1) !== stock[key]) throw new AppError(409, 'IMMUTABLE_INVENTORY', 'Crea un inventario nuevo para cambiar producto o sucursal.');
     }
     const expectedVersion = integer(payload.expectedVersion, 'version');
     const next = payload.cantidad === undefined ? stock.cantidad : integer(payload.cantidad, 'cantidad');
     const status = payload.estatus === undefined ? stock.estatus : integer(payload.estatus, 'estatus');
     if (![0, 1].includes(status)) throw new AppError(400, 'INVALID_INPUT', 'Estatus invalido.');
-    return changeStockTx(tx, { inventoryId: stock.id, delta: next - stock.cantidad, sourceType: 'manual', actorId, reason: validateReason(payload.reason), expectedVersion, status });
+    return changeStockTx(tx, { inventoryId: stock.id, delta: next - stock.cantidad, sourceType: 'manual', actorId, reason: validateReason(payload.reason), expectedVersion, status, supplier: payload.proveedor === undefined ? stock.proveedor : integer(payload.proveedor, 'proveedor', 1) });
   });
 }
 async function createInventory(payload, actorId) {

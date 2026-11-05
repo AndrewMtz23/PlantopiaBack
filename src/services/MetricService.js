@@ -88,7 +88,7 @@ class MetricService {
     }));
     const enrichedRecentPayments = await this.attachUsers(recentPayments);
     const enrichedRecentLogs = await this.attachUsers(recentLogs);
-    const salesByBranch = await this.getSalesByBranch();
+    const salesByBranch = []; // Detailed reports are fetched independently; totals must remain available.
 
     return {
       threshold: LOW_STOCK_THRESHOLD,
@@ -121,8 +121,11 @@ class MetricService {
     return Number(row.margin);
   }
 
-  async getSalesByBranch() {
-    const rows = await prisma.$queryRaw`SELECT to_char(v."fechaRegistro", 'YYYY-MM-DD') AS fecha, CASE WHEN v.sucursal IS NULL THEN 'Historico sin sucursal registrada' ELSE 'Sucursal ' || v.sucursal::text END AS sucursal, SUM(v.total)::text AS total, SUM(v.cantidad)::text AS cantidad, COALESCE((SUM(v.total) - SUM(COALESCE(v."costoUnitario", p."precioCompra", 0) * v.cantidad)) / NULLIF(SUM(v.total), 0) * 100, 0)::text AS rentabilidad FROM tventas v JOIN tpagos pay ON pay.id=v.pago JOIN tproductos p ON p.id=v.producto WHERE pay.estado='pagado' GROUP BY fecha, v.sucursal ORDER BY fecha, v.sucursal LIMIT 1001`;
+  async getSalesByBranch({ from, to } = {}) {
+    const end = to ? new Date(to + 'T23:59:59.999Z') : new Date();
+    const start = from ? new Date(from + 'T00:00:00.000Z') : new Date(end.getTime() - 30 * 86400000);
+    if ((from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) || (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start > end || end - start > 366 * 86400000) throw new (require('../utils/AppError'))(400, 'INVALID_DATE_RANGE', 'Selecciona un rango valido de hasta un ano.');
+    const rows = await prisma.$queryRaw`SELECT to_char(v."fechaRegistro", 'YYYY-MM-DD') AS fecha, CASE WHEN v.sucursal IS NULL THEN 'Historico sin sucursal registrada' ELSE 'Sucursal ' || v.sucursal::text END AS sucursal, SUM(v.total)::text AS total, SUM(v.cantidad)::text AS cantidad, COALESCE((SUM(v.total) - SUM(COALESCE(v."costoUnitario", p."precioCompra", 0) * v.cantidad)) / NULLIF(SUM(v.total), 0) * 100, 0)::text AS rentabilidad FROM tventas v JOIN tpagos pay ON pay.id=v.pago JOIN tproductos p ON p.id=v.producto WHERE pay.estado='pagado' AND v."fechaRegistro" >= ${start} AND v."fechaRegistro" <= ${end} GROUP BY fecha, v.sucursal ORDER BY fecha, v.sucursal LIMIT 1001`;
     if (rows.length > 1000) throw new (require('../utils/AppError'))(409, 'REPORT_TOO_LARGE', 'El reporte requiere un rango de fechas mas acotado.');
     return rows.map(row => ({ ...row, cantidad: Number(row.cantidad), rentabilidad: Number(row.rentabilidad) }));
   }
