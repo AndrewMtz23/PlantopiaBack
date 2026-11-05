@@ -190,3 +190,9 @@ The versioned API is documented in [OpenAPI](contracts/openapi.yaml). Collection
 `/health` reports process liveness. `/ready` returns 200 only when the database is reachable and the expected migrations are applied; otherwise it returns 503. Startup checks the same condition without applying migrations. SIGINT/SIGTERM stop accepting requests, drain the listener (10-second deadline), and close the database pool. The pool is limited to 10 connections with a 5-second connection timeout and a 15-second statement timeout.
 
 HTTP logs contain a generated request ID, route template, method, status and duration. Request bodies, raw database errors, credentials and contact data are excluded. CI verifies the OpenAPI response schemas, scans tracked application files for credential patterns, and blocks high/critical dependency advisories. There is no automatic deployment.
+
+### Images and reporting
+
+Product-form uploads are temporary previews for up to one hour. Saving a product promotes its image; failed saves compensate new files. A cleanup worker runs at startup and every 15 minutes to expire abandoned previews and reconcile interrupted promotions. Existing images are preserved. New images are decoded and reencoded as WebP before publication.
+
+Sales-by-branch reports accept `from` and `to` dates, default to the last 30 days, and cap a request at 1000 date/branch groups. Use a narrower date range when prompted. Dashboard lifetime totals are calculated independently. Inventory supplier changes require an observed version and a reason; the audit records both suppliers. Product and branch remain fixed for each inventory record.
