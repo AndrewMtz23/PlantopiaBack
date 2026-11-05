@@ -12,7 +12,7 @@ const definitions = {
 };
 async function list(kind, query = {}, ownerId) {
   const { page, pageSize, skip, take } = parsePagination(query);
-  for (const key of Object.keys(query)) if (!['page', 'pageSize', 'sort', 'q', 'modulo', 'nivel', 'accion', 'usuario', 'desde', 'hasta', 'limit'].includes(key)) invalid(key);
+  for (const key of Object.keys(query)) if (!['page', 'pageSize', 'sort', 'q', ...(kind === 'logs' ? ['modulo', 'nivel', 'accion', 'limit'] : [])].includes(key)) invalid(key);
   const definition = definitions[kind];
   const where = { ...definition.where };
   if (kind === 'payments' && ownerId) where.usuario = ownerId;

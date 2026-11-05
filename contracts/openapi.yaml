@@ -84,6 +84,956 @@
       "Money": {
         "type": "string",
         "pattern": "^\\d+\\.\\d{2}$"
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "estatus": {
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "tipo": {
+            "enum": [
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 45,
+            "minLength": 3
+          },
+          "fechaNacimiento": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "genero": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "^\\d{10}$"
+          },
+          "correo": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "domicilio": {
+            "type": "string",
+            "maxLength": 450,
+            "minLength": 8
+          },
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estadoDireccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "codigoPostal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(\\d{5})?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referenciasDomicilio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fotoPerfil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "tipo",
+          "estatus"
+        ],
+        "additionalProperties": false
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "estatus": {
+            "enum": [
+              0,
+              1,
+              "0",
+              "1"
+            ]
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 45,
+            "minLength": 1
+          },
+          "detalles": {
+            "type": "string",
+            "maxLength": 450
+          },
+          "categoria": {
+            "type": "string",
+            "maxLength": 45
+          },
+          "precioCompra": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          },
+          "precioVenta": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          },
+          "imagen": {
+            "type": "string",
+            "maxLength": 450
+          },
+          "imagenUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "precioCompra",
+          "precioVenta"
+        ],
+        "additionalProperties": false
+      },
+      "Inventory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estatus": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sucursal": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "proveedor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "producto": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cantidad": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "cantidad",
+          "producto",
+          "sucursal",
+          "proveedor",
+          "estatus"
+        ],
+        "additionalProperties": false
+      },
+      "CartLine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "usuario": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "inventario": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cantidad": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "subtotal": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          }
+        },
+        "required": [
+          "id",
+          "inventario",
+          "cantidad",
+          "subtotal"
+        ],
+        "additionalProperties": false
+      },
+      "Payment": {
+        "type": "object",
+        "required": [
+          "id",
+          "estado",
+          "total"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "estado": {
+            "enum": [
+              "pendiente",
+              "pagado",
+              "cancelado"
+            ]
+          },
+          "total": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          },
+          "subtotal": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          },
+          "iva": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          },
+          "envio": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          },
+          "estadoEntrega": {
+            "enum": [
+              "preparando",
+              "listo",
+              "enviado",
+              "entregado",
+              "cancelado"
+            ]
+          }
+        },
+        "additionalProperties": true
+      },
+      "RegistrationInput": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 45,
+            "minLength": 3
+          },
+          "fechaNacimiento": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "genero": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "^\\d{10}$"
+          },
+          "correo": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "domicilio": {
+            "type": "string",
+            "maxLength": 450,
+            "minLength": 8
+          },
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estadoDireccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "codigoPostal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(\\d{5})?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referenciasDomicilio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clave": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "nombre",
+          "fechaNacimiento",
+          "genero",
+          "telefono",
+          "correo",
+          "domicilio",
+          "clave"
+        ],
+        "additionalProperties": false
+      },
+      "RegistrationResult": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "idUsuario": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "message",
+          "idUsuario"
+        ],
+        "additionalProperties": false
+      },
+      "ProfileInput": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 45,
+            "minLength": 3
+          },
+          "fechaNacimiento": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "genero": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "^\\d{10}$"
+          },
+          "correo": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "domicilio": {
+            "type": "string",
+            "maxLength": 450,
+            "minLength": 8
+          },
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estadoDireccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "codigoPostal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(\\d{5})?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referenciasDomicilio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "nombre",
+          "fechaNacimiento",
+          "genero",
+          "telefono",
+          "correo",
+          "domicilio"
+        ],
+        "additionalProperties": false
+      },
+      "AdminUserInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 45,
+            "minLength": 3
+          },
+          "fechaNacimiento": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "genero": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "^\\d{10}$"
+          },
+          "correo": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "domicilio": {
+            "type": "string",
+            "maxLength": 450,
+            "minLength": 8
+          },
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estadoDireccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "codigoPostal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(\\d{5})?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referenciasDomicilio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitud": {
+            "anyOf": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clave": {
+            "type": "string",
+            "maxLength": 72
+          },
+          "tipo": {
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              "1",
+              "2",
+              "3",
+              "4"
+            ]
+          },
+          "estatus": {
+            "enum": [
+              0,
+              1,
+              "0",
+              "1"
+            ]
+          }
+        },
+        "required": [
+          "nombre",
+          "fechaNacimiento",
+          "genero",
+          "telefono",
+          "correo",
+          "domicilio",
+          "tipo",
+          "estatus"
+        ],
+        "additionalProperties": false
+      },
+      "ProductInput": {
+        "type": "object",
+        "properties": {
+          "estatus": {
+            "enum": [
+              0,
+              1,
+              "0",
+              "1"
+            ]
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 45,
+            "minLength": 1
+          },
+          "detalles": {
+            "type": "string",
+            "maxLength": 450
+          },
+          "categoria": {
+            "type": "string",
+            "maxLength": 45
+          },
+          "precioCompra": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "multipleOf": 0.01
+              }
+            ]
+          },
+          "precioVenta": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "multipleOf": 0.01
+              }
+            ]
+          },
+          "imagen": {
+            "type": "string",
+            "maxLength": 450
+          },
+          "imagenUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "nombre",
+          "categoria",
+          "precioCompra",
+          "precioVenta"
+        ],
+        "additionalProperties": false
+      },
+      "ProductUpdate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "estatus": {
+            "enum": [
+              0,
+              1,
+              "0",
+              "1"
+            ]
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 45,
+            "minLength": 1
+          },
+          "detalles": {
+            "type": "string",
+            "maxLength": 450
+          },
+          "categoria": {
+            "type": "string",
+            "maxLength": 45
+          },
+          "precioCompra": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "multipleOf": 0.01
+              }
+            ]
+          },
+          "precioVenta": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+(\\.\\d{1,2})?$"
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "multipleOf": 0.01
+              }
+            ]
+          },
+          "imagen": {
+            "type": "string",
+            "maxLength": 450
+          },
+          "imagenUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "InventoryInput": {
+        "type": "object",
+        "properties": {
+          "estatus": {
+            "enum": [
+              0,
+              1,
+              "0",
+              "1"
+            ]
+          },
+          "sucursal": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "proveedor": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "producto": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "cantidad": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "producto",
+          "sucursal",
+          "proveedor",
+          "cantidad"
+        ],
+        "additionalProperties": false
+      },
+      "InventoryUpdate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "estatus": {
+            "enum": [
+              0,
+              1,
+              "0",
+              "1"
+            ]
+          },
+          "sucursal": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "proveedor": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "producto": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "cantidad": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 250,
+            "minLength": 5
+          }
+        },
+        "required": [
+          "id",
+          "expectedVersion",
+          "reason"
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -149,7 +1099,170 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page"
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "estatus": {
+                            "enum": [
+                              0,
+                              1
+                            ]
+                          },
+                          "tipo": {
+                            "enum": [
+                              1,
+                              2,
+                              3,
+                              4
+                            ]
+                          },
+                          "nombre": {
+                            "type": "string",
+                            "maxLength": 45,
+                            "minLength": 3
+                          },
+                          "fechaNacimiento": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "genero": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "telefono": {
+                            "type": "string",
+                            "pattern": "^\\d{10}$"
+                          },
+                          "correo": {
+                            "type": "string",
+                            "maxLength": 254
+                          },
+                          "domicilio": {
+                            "type": "string",
+                            "maxLength": 450,
+                            "minLength": 8
+                          },
+                          "ciudad": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "estadoDireccion": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "codigoPostal": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^(\\d{5})?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "referenciasDomicilio": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "latitud": {
+                            "anyOf": [
+                              {
+                                "type": [
+                                  "number",
+                                  "string"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "longitud": {
+                            "anyOf": [
+                              {
+                                "type": [
+                                  "number",
+                                  "string"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fotoPerfil": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "nombre",
+                          "tipo",
+                          "estatus"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
                 }
               }
             }
@@ -223,7 +1336,93 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page"
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "estatus": {
+                            "enum": [
+                              0,
+                              1,
+                              "0",
+                              "1"
+                            ]
+                          },
+                          "nombre": {
+                            "type": "string",
+                            "maxLength": 45,
+                            "minLength": 1
+                          },
+                          "detalles": {
+                            "type": "string",
+                            "maxLength": 450
+                          },
+                          "categoria": {
+                            "type": "string",
+                            "maxLength": 45
+                          },
+                          "precioCompra": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "precioVenta": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "imagen": {
+                            "type": "string",
+                            "maxLength": 450
+                          },
+                          "imagenUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "nombre",
+                          "precioCompra",
+                          "precioVenta"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
                 }
               }
             }
@@ -297,7 +1496,76 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page"
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "estatus": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "sucursal": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "proveedor": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "producto": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "cantidad": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "version",
+                          "cantidad",
+                          "producto",
+                          "sucursal",
+                          "proveedor",
+                          "estatus"
+                        ],
+                        "additionalProperties": true
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
                 }
               }
             }
@@ -367,7 +1635,101 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page"
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "nombre",
+                          "cantidad",
+                          "precioVenta"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "inventario_id": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "producto_id": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "producto": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "estatus": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "inventario_estatus": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "sucursal": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "cantidad": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "sucursal_nombre": {
+                            "type": "string"
+                          },
+                          "nombre": {
+                            "type": "string"
+                          },
+                          "detalles": {
+                            "type": "string"
+                          },
+                          "categoria": {
+                            "type": "string"
+                          },
+                          "precioVenta": {
+                            "type": "string"
+                          },
+                          "imagen": {
+                            "type": "string"
+                          },
+                          "imagenUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
                 }
               }
             }
@@ -441,7 +1803,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page"
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "estado",
+                          "total"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "estado": {
+                            "enum": [
+                              "pendiente",
+                              "pagado",
+                              "cancelado"
+                            ]
+                          },
+                          "total": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "subtotal": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "iva": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "envio": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "estadoEntrega": {
+                            "enum": [
+                              "preparando",
+                              "listo",
+                              "enviado",
+                              "entregado",
+                              "cancelado"
+                            ]
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
                 }
               }
             }
@@ -515,7 +1950,62 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page"
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "modulo",
+                          "accion",
+                          "descripcion",
+                          "nivel"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "modulo": {
+                            "type": "string"
+                          },
+                          "accion": {
+                            "type": "string"
+                          },
+                          "descripcion": {
+                            "type": "string"
+                          },
+                          "nivel": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
                 }
               }
             }
@@ -589,7 +2079,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page"
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "estado",
+                          "total"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "estado": {
+                            "enum": [
+                              "pendiente",
+                              "pagado",
+                              "cancelado"
+                            ]
+                          },
+                          "total": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "subtotal": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "iva": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "envio": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "estadoEntrega": {
+                            "enum": [
+                              "preparando",
+                              "listo",
+                              "enviado",
+                              "entregado",
+                              "cancelado"
+                            ]
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
                 }
               }
             }
@@ -614,9 +2177,6 @@
         "description": "Public operation. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
         "security": [],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -624,6 +2184,100 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "token": {
+                      "type": "string",
+                      "maxLength": 4096
+                    },
+                    "session": {
+                      "type": "object",
+                      "properties": {
+                        "idUsuario": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "tipo": {
+                          "enum": [
+                            1,
+                            2,
+                            3,
+                            4
+                          ]
+                        },
+                        "nombre": {
+                          "type": "string",
+                          "maxLength": 45
+                        },
+                        "correo": {
+                          "type": "string",
+                          "maxLength": 254
+                        },
+                        "fotoPerfil": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "idUsuario",
+                        "tipo",
+                        "nombre",
+                        "correo"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "token",
+                    "session"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "clave": {
+                    "type": "string",
+                    "maxLength": 72
+                  }
+                },
+                "required": [
+                  "correo",
+                  "clave"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -637,9 +2291,6 @@
         "description": "Public operation. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
         "security": [],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -647,6 +2298,154 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "201": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "idUsuario": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "idUsuario"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 3
+                  },
+                  "fechaNacimiento": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "genero": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "domicilio": {
+                    "type": "string",
+                    "maxLength": 450,
+                    "minLength": 8
+                  },
+                  "ciudad": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estadoDireccion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "codigoPostal": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d{5})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "referenciasDomicilio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "clave": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "fechaNacimiento",
+                  "genero",
+                  "telefono",
+                  "correo",
+                  "domicilio",
+                  "clave"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -691,9 +2490,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -701,6 +2497,444 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "201": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estatus": {
+                      "enum": [
+                        0,
+                        1
+                      ]
+                    },
+                    "tipo": {
+                      "enum": [
+                        1,
+                        2,
+                        3,
+                        4
+                      ]
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "maxLength": 45,
+                      "minLength": 3
+                    },
+                    "fechaNacimiento": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "genero": {
+                      "type": "string",
+                      "maxLength": 20
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "pattern": "^\\d{10}$"
+                    },
+                    "correo": {
+                      "type": "string",
+                      "maxLength": 254
+                    },
+                    "domicilio": {
+                      "type": "string",
+                      "maxLength": 450,
+                      "minLength": 8
+                    },
+                    "ciudad": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "estadoDireccion": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "codigoPostal": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^(\\d{5})?$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "referenciasDomicilio": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "latitud": {
+                      "anyOf": [
+                        {
+                          "type": [
+                            "number",
+                            "string"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitud": {
+                      "anyOf": [
+                        {
+                          "type": [
+                            "number",
+                            "string"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fotoPerfil": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "tipo",
+                    "estatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 3
+                  },
+                  "fechaNacimiento": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "genero": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "domicilio": {
+                    "type": "string",
+                    "maxLength": 450,
+                    "minLength": 8
+                  },
+                  "ciudad": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estadoDireccion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "codigoPostal": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d{5})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "referenciasDomicilio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "clave": {
+                    "type": "string",
+                    "maxLength": 72
+                  },
+                  "tipo": {
+                    "enum": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      "1",
+                      "2",
+                      "3",
+                      "4"
+                    ]
+                  },
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "fechaNacimiento",
+                  "genero",
+                  "telefono",
+                  "correo",
+                  "domicilio",
+                  "tipo",
+                  "estatus"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 3
+                  },
+                  "fechaNacimiento": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "genero": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "domicilio": {
+                    "type": "string",
+                    "maxLength": 450,
+                    "minLength": 8
+                  },
+                  "ciudad": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estadoDireccion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "codigoPostal": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d{5})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "referenciasDomicilio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "clave": {
+                    "type": "string",
+                    "maxLength": 72
+                  },
+                  "tipo": {
+                    "enum": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      "1",
+                      "2",
+                      "3",
+                      "4"
+                    ]
+                  },
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  },
+                  "fotoPerfil": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Optional JPG/PNG/WebP up to5MiB and20MP."
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "fechaNacimiento",
+                  "genero",
+                  "telefono",
+                  "correo",
+                  "domicilio",
+                  "tipo",
+                  "estatus"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -770,9 +3004,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -780,6 +3011,441 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    },
+                    "usuario": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "estatus": {
+                          "enum": [
+                            0,
+                            1
+                          ]
+                        },
+                        "tipo": {
+                          "enum": [
+                            1,
+                            2,
+                            3,
+                            4
+                          ]
+                        },
+                        "nombre": {
+                          "type": "string",
+                          "maxLength": 45,
+                          "minLength": 3
+                        },
+                        "fechaNacimiento": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "genero": {
+                          "type": "string",
+                          "maxLength": 20
+                        },
+                        "telefono": {
+                          "type": "string",
+                          "pattern": "^\\d{10}$"
+                        },
+                        "correo": {
+                          "type": "string",
+                          "maxLength": 254
+                        },
+                        "domicilio": {
+                          "type": "string",
+                          "maxLength": 450,
+                          "minLength": 8
+                        },
+                        "ciudad": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "estadoDireccion": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "codigoPostal": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^(\\d{5})?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "referenciasDomicilio": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "latitud": {
+                          "anyOf": [
+                            {
+                              "type": [
+                                "number",
+                                "string"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "longitud": {
+                          "anyOf": [
+                            {
+                              "type": [
+                                "number",
+                                "string"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "fotoPerfil": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "nombre",
+                        "tipo",
+                        "estatus"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "session": {
+                      "type": "object",
+                      "properties": {
+                        "idUsuario": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "tipo": {
+                          "enum": [
+                            1,
+                            2,
+                            3,
+                            4
+                          ]
+                        },
+                        "nombre": {
+                          "type": "string",
+                          "maxLength": 45
+                        },
+                        "correo": {
+                          "type": "string",
+                          "maxLength": 254
+                        },
+                        "fotoPerfil": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "idUsuario",
+                        "tipo",
+                        "nombre",
+                        "correo"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "usuario",
+                    "session"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 3
+                  },
+                  "fechaNacimiento": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "genero": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "domicilio": {
+                    "type": "string",
+                    "maxLength": 450,
+                    "minLength": 8
+                  },
+                  "ciudad": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estadoDireccion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "codigoPostal": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d{5})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "referenciasDomicilio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "fechaNacimiento",
+                  "genero",
+                  "telefono",
+                  "correo",
+                  "domicilio"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 3
+                  },
+                  "fechaNacimiento": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "genero": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "domicilio": {
+                    "type": "string",
+                    "maxLength": 450,
+                    "minLength": 8
+                  },
+                  "ciudad": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estadoDireccion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "codigoPostal": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d{5})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "referenciasDomicilio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fotoPerfil": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Optional JPG/PNG/WebP up to5MiB and20MP."
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "fechaNacimiento",
+                  "genero",
+                  "telefono",
+                  "correo",
+                  "domicilio"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -797,9 +3463,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -807,6 +3470,62 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "maxLength": 500
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "claveActual": {
+                    "type": "string",
+                    "maxLength": 72
+                  },
+                  "nuevaClave": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 8
+                  },
+                  "confirmarClave": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "claveActual",
+                  "nuevaClave",
+                  "confirmarClave"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -862,9 +3581,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -872,6 +3588,446 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estatus": {
+                      "enum": [
+                        0,
+                        1
+                      ]
+                    },
+                    "tipo": {
+                      "enum": [
+                        1,
+                        2,
+                        3,
+                        4
+                      ]
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "maxLength": 45,
+                      "minLength": 3
+                    },
+                    "fechaNacimiento": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "genero": {
+                      "type": "string",
+                      "maxLength": 20
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "pattern": "^\\d{10}$"
+                    },
+                    "correo": {
+                      "type": "string",
+                      "maxLength": 254
+                    },
+                    "domicilio": {
+                      "type": "string",
+                      "maxLength": 450,
+                      "minLength": 8
+                    },
+                    "ciudad": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "estadoDireccion": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "codigoPostal": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^(\\d{5})?$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "referenciasDomicilio": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "latitud": {
+                      "anyOf": [
+                        {
+                          "type": [
+                            "number",
+                            "string"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitud": {
+                      "anyOf": [
+                        {
+                          "type": [
+                            "number",
+                            "string"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fotoPerfil": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "tipo",
+                    "estatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 3
+                  },
+                  "fechaNacimiento": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "genero": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "domicilio": {
+                    "type": "string",
+                    "maxLength": 450,
+                    "minLength": 8
+                  },
+                  "ciudad": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estadoDireccion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "codigoPostal": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d{5})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "referenciasDomicilio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "clave": {
+                    "type": "string",
+                    "maxLength": 72
+                  },
+                  "tipo": {
+                    "enum": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      "1",
+                      "2",
+                      "3",
+                      "4"
+                    ]
+                  },
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "fechaNacimiento",
+                  "genero",
+                  "telefono",
+                  "correo",
+                  "domicilio",
+                  "id",
+                  "tipo",
+                  "estatus"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 3
+                  },
+                  "fechaNacimiento": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "genero": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "maxLength": 254
+                  },
+                  "domicilio": {
+                    "type": "string",
+                    "maxLength": 450,
+                    "minLength": 8
+                  },
+                  "ciudad": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estadoDireccion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "codigoPostal": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d{5})?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "referenciasDomicilio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitud": {
+                    "anyOf": [
+                      {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "clave": {
+                    "type": "string",
+                    "maxLength": 72
+                  },
+                  "tipo": {
+                    "enum": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      "1",
+                      "2",
+                      "3",
+                      "4"
+                    ]
+                  },
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  },
+                  "fotoPerfil": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Optional JPG/PNG/WebP up to5MiB and20MP."
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "fechaNacimiento",
+                  "genero",
+                  "telefono",
+                  "correo",
+                  "domicilio",
+                  "id",
+                  "tipo",
+                  "estatus"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -977,16 +4133,13 @@
       "post": {
         "operationId": "products_post__upload",
         "summary": "POST /upload",
-        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Multipart JPG/PNG/WebP only, maximum 5 MiB each, 20 megapixels, 5 gallery images. Files are decoded and reencoded as WebP.",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Multipart JPG/PNG/WebP only, maximum 5 MiB each, 20 megapixels, 5 gallery images. Files are decoded and reencoded as WebP. The returned image is a pending preview, expires after one hour, and is promoted only when a product stores the reference.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -994,6 +4147,53 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    },
+                    "imagePath": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "url": {
+                      "type": "string",
+                      "maxLength": 500
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "imagePath",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
               }
             }
           }
@@ -1011,15 +4211,49 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "ruta"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "ruta": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "images"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -1035,7 +4269,30 @@
               "minimum": 1
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imagenes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/verProducto": {
@@ -1076,9 +4333,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1086,6 +4340,154 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "201": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estatus": {
+                      "enum": [
+                        0,
+                        1,
+                        "0",
+                        "1"
+                      ]
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "maxLength": 45,
+                      "minLength": 1
+                    },
+                    "detalles": {
+                      "type": "string",
+                      "maxLength": 450
+                    },
+                    "categoria": {
+                      "type": "string",
+                      "maxLength": 45
+                    },
+                    "precioCompra": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "precioVenta": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "imagen": {
+                      "type": "string",
+                      "maxLength": 450
+                    },
+                    "imagenUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "precioCompra",
+                    "precioVenta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 1
+                  },
+                  "detalles": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "categoria": {
+                    "type": "string",
+                    "maxLength": 45
+                  },
+                  "precioCompra": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      },
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "multipleOf": 0.01
+                      }
+                    ]
+                  },
+                  "precioVenta": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      },
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "multipleOf": 0.01
+                      }
+                    ]
+                  },
+                  "imagen": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "imagenUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "categoria",
+                  "precioCompra",
+                  "precioVenta"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -1103,9 +4505,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1113,6 +4512,155 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estatus": {
+                      "enum": [
+                        0,
+                        1,
+                        "0",
+                        "1"
+                      ]
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "maxLength": 45,
+                      "minLength": 1
+                    },
+                    "detalles": {
+                      "type": "string",
+                      "maxLength": 450
+                    },
+                    "categoria": {
+                      "type": "string",
+                      "maxLength": 45
+                    },
+                    "precioCompra": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "precioVenta": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "imagen": {
+                      "type": "string",
+                      "maxLength": 450
+                    },
+                    "imagenUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "precioCompra",
+                    "precioVenta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 1
+                  },
+                  "detalles": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "categoria": {
+                    "type": "string",
+                    "maxLength": 45
+                  },
+                  "precioCompra": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      },
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "multipleOf": 0.01
+                      }
+                    ]
+                  },
+                  "precioVenta": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      },
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "multipleOf": 0.01
+                      }
+                    ]
+                  },
+                  "imagen": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "imagenUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -1168,9 +4716,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1178,6 +4723,140 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "estatus": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sucursal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "proveedor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "producto": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "cantidad",
+                    "producto",
+                    "sucursal",
+                    "proveedor",
+                    "estatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "productoId": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "sucursalId": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "operacion": {
+                    "enum": [
+                      "add",
+                      "remove",
+                      "set"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 250,
+                    "minLength": 5
+                  }
+                },
+                "required": [
+                  "productoId",
+                  "sucursalId",
+                  "cantidad",
+                  "operacion",
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "operacion": {
+                          "const": "set"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "expectedVersion"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "operacion": {
+                          "enum": [
+                            "add",
+                            "remove"
+                          ]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "cantidad": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -1231,15 +4910,79 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estatus": {
+                      "enum": [
+                        0,
+                        1,
+                        "0",
+                        "1"
+                      ]
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "maxLength": 45,
+                      "minLength": 1
+                    },
+                    "detalles": {
+                      "type": "string",
+                      "maxLength": 450
+                    },
+                    "categoria": {
+                      "type": "string",
+                      "maxLength": 45
+                    },
+                    "precioCompra": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "precioVenta": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "imagen": {
+                      "type": "string",
+                      "maxLength": 450
+                    },
+                    "imagenUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "precioCompra",
+                    "precioVenta"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -1255,7 +4998,87 @@
               "minimum": 1
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "maxLength": 45,
+                    "minLength": 1
+                  },
+                  "detalles": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "categoria": {
+                    "type": "string",
+                    "maxLength": 45
+                  },
+                  "precioCompra": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      },
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "multipleOf": 0.01
+                      }
+                    ]
+                  },
+                  "precioVenta": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d+(\\.\\d{1,2})?$"
+                      },
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "multipleOf": 0.01
+                      }
+                    ]
+                  },
+                  "imagen": {
+                    "type": "string",
+                    "maxLength": 450
+                  },
+                  "imagenUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/verInventario": {
@@ -1296,9 +5119,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1306,6 +5126,107 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "201": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "estatus": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sucursal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "proveedor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "producto": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "cantidad",
+                    "producto",
+                    "sucursal",
+                    "proveedor",
+                    "estatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  },
+                  "sucursal": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "proveedor": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "producto": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "cantidad": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "producto",
+                  "sucursal",
+                  "proveedor",
+                  "cantidad"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -1316,16 +5237,13 @@
       "put": {
         "operationId": "inventory_put__editarInventario",
         "summary": "PUT /editarInventario",
-        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Replacing cantidad requires expectedVersion and a 5-250 character reason. Stale versions return 409 STOCK_CHANGED. Product, branch and supplier cannot be reassigned.",
+        "description": "Requires roles 1, 3. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Replacing cantidad requires expectedVersion and a 5-250 character reason. Stale versions return 409 STOCK_CHANGED. Product and branch cannot be reassigned. Supplier changes require the reviewed version and reason and record both supplier identifiers in the audit.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1333,6 +5251,119 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "estatus": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sucursal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "proveedor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "producto": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "cantidad",
+                    "producto",
+                    "sucursal",
+                    "proveedor",
+                    "estatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "estatus": {
+                    "enum": [
+                      0,
+                      1,
+                      "0",
+                      "1"
+                    ]
+                  },
+                  "sucursal": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "proveedor": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "producto": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "cantidad": {
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 250,
+                    "minLength": 5
+                  }
+                },
+                "required": [
+                  "id",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -1415,9 +5446,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1425,6 +5453,140 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "estatus": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sucursal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "proveedor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "producto": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "cantidad",
+                    "producto",
+                    "sucursal",
+                    "proveedor",
+                    "estatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "productoId": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "sucursalId": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "operacion": {
+                    "enum": [
+                      "add",
+                      "remove",
+                      "set"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 250,
+                    "minLength": 5
+                  }
+                },
+                "required": [
+                  "productoId",
+                  "sucursalId",
+                  "cantidad",
+                  "operacion",
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "operacion": {
+                          "const": "set"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "expectedVersion"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "operacion": {
+                          "enum": [
+                            "add",
+                            "remove"
+                          ]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "cantidad": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -1507,9 +5669,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1517,6 +5676,70 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "usuario": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "inventario": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "subtotal": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "inventario",
+                    "cantidad",
+                    "subtotal"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inventario": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "inventario",
+                  "cantidad"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -1534,9 +5757,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1544,6 +5764,70 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "usuario": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "inventario": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "subtotal": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "inventario",
+                    "cantidad",
+                    "subtotal"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "id",
+                  "cantidad"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -1675,9 +5959,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
@@ -1685,6 +5966,56 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "usuario": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "inventario": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "usuario",
+                    "inventario"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inventario": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "inventario"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -1787,15 +6118,50 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "pagoId": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estado": {
+                      "enum": [
+                        "pendiente",
+                        "pagado",
+                        "cancelado"
+                      ]
+                    },
+                    "total": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "pagoId",
+                    "estado",
+                    "total"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -1929,15 +6295,66 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "estado",
+                    "total"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estado": {
+                      "enum": [
+                        "pendiente",
+                        "pagado",
+                        "cancelado"
+                      ]
+                    },
+                    "total": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "subtotal": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "iva": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "envio": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "estadoEntrega": {
+                      "enum": [
+                        "preparando",
+                        "listo",
+                        "enviado",
+                        "entregado",
+                        "cancelado"
+                      ]
+                    }
+                  },
+                  "additionalProperties": true
                 }
               }
             }
@@ -1953,7 +6370,31 @@
               "minimum": 1
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "preparando",
+                      "listo",
+                      "entregado",
+                      "cancelado"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/reparto/disponibles": {
@@ -2021,15 +6462,66 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "estado",
+                    "total"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estado": {
+                      "enum": [
+                        "pendiente",
+                        "pagado",
+                        "cancelado"
+                      ]
+                    },
+                    "total": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "subtotal": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "iva": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "envio": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "estadoEntrega": {
+                      "enum": [
+                        "preparando",
+                        "listo",
+                        "enviado",
+                        "entregado",
+                        "cancelado"
+                      ]
+                    }
+                  },
+                  "additionalProperties": true
                 }
               }
             }
@@ -2045,7 +6537,20 @@
               "minimum": 1
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/verPagos": {
@@ -2209,15 +6714,66 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "estado",
+                    "total"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "estado": {
+                      "enum": [
+                        "pendiente",
+                        "pagado",
+                        "cancelado"
+                      ]
+                    },
+                    "total": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "subtotal": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "iva": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "envio": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "estadoEntrega": {
+                      "enum": [
+                        "preparando",
+                        "listo",
+                        "enviado",
+                        "entregado",
+                        "cancelado"
+                      ]
+                    }
+                  },
+                  "additionalProperties": true
                 }
               }
             }
@@ -2233,7 +6789,20 @@
               "minimum": 1
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/actualizarSeguimientoPago/{id}": {
@@ -2247,15 +6816,75 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Operation completed; representation depends on the resource."
-          },
           "default": {
             "description": "Typed API error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operation completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "seguimiento": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "estado",
+                        "total"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "estado": {
+                          "enum": [
+                            "pendiente",
+                            "pagado",
+                            "cancelado"
+                          ]
+                        },
+                        "total": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "subtotal": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "iva": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "envio": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "estadoEntrega": {
+                          "enum": [
+                            "preparando",
+                            "listo",
+                            "enviado",
+                            "entregado",
+                            "cancelado"
+                          ]
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "seguimiento"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -2271,7 +6900,38 @@
               "minimum": 1
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "estadoEntrega": {
+                    "enum": [
+                      "preparando",
+                      "listo",
+                      "cancelado"
+                    ]
+                  },
+                  "guiaEntrega": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "notasEntrega": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "estadoEntrega"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/verLogs": {
@@ -2397,7 +7057,7 @@
       "get": {
         "operationId": "metrics_get__ventasPorSucursal",
         "summary": "GET /ventasPorSucursal",
-        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route.",
+        "description": "Requires administrator. Resource owners are checked server-side; role fields cannot grant access. Legacy command alias uses the same policies as the unversioned route. Date range defaults to the last30 days and is limited to one year. More than1000 date/branch groups returns409; narrow the supplied range. Dashboard lifetime totals are independent.",
         "security": [
           {
             "bearerAuth": []
@@ -2417,7 +7077,25 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ]
       }
     }
   }
