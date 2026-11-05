@@ -36,6 +36,12 @@ app.use(errorContract);
 app.use(express.json({ limit: config.bodyLimit }));
 app.use(express.static(publicDirectoryPath));
 app.use('/uploads/tmp', (req, res) => res.status(404).json({ error: 'Recurso no encontrado.' }));
+app.get('/uploads/pending/:name', async (req, res, next) => {
+  try {
+    const target = await require('./infrastructure/storage/pendingImages').getPendingImage(`/uploads/pending/${req.params.name}`);
+    res.set('Cache-Control', 'no-store').type('webp').sendFile(target, error => { if (error) next(error); });
+  } catch (error) { next(error); }
+});
 app.use("/uploads", express.static(uploadsDirectoryPath));
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.get('/ready', async (req, res, next) => {

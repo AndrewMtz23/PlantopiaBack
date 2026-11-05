@@ -85,9 +85,7 @@ class ProductService {
 
   async storeSingleProductImage(file) {
     if (!file) throw new AppError(400, 'INVALID_IMAGE', 'No se recibio imagen.');
-    const stored = await require('../infrastructure/storage/imageStore').validateAndStoreImage(file, { ownerType: 'product' });
-    file.committed = true;
-    const imagePath = `/uploads/${stored.key}`;
+    const imagePath = await require('../infrastructure/storage/pendingImages').stageProductImage(file);
     return { ok: true, imagePath, url: imagePath };
   }
 
@@ -219,4 +217,12 @@ class ProductService {
   }
 }
 
-module.exports = new ProductService();
+const service = new ProductService();
+for (const name of ['createProduct', 'updateProduct']) {
+  const method = service[name].bind(service);
+  service[name] = (...args) => {
+    const index = name === 'createProduct' ? 0 : 1;
+    return require('../infrastructure/storage/pendingImages').withProductImages(args[index], payload => { args[index] = payload; return method(...args); });
+  };
+}
+module.exports = service;

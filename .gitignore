@@ -21,3 +21,5 @@ yarn-error.log*
 Thumbs.db
 
 /src/generated/prisma
+/.pending-product-images/
+/uploads/media/

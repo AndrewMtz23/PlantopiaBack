@@ -4,7 +4,15 @@ async function startServer({ prisma, app, port, readiness = require('../scripts/
     await prisma.$disconnect();
     throw new Error('Database schema is not ready. Apply reviewed migrations before starting.');
   }
-  return app.listen(port);
+  const pending = require('./infrastructure/storage/pendingImages');
+  const cleanup = () => pending.cleanupPendingImages(prisma).catch(() => require('./infrastructure/logging/logger').writeTechnicalLog({ level: 'error', event: 'image_cleanup_failed' }));
+  await cleanup();
+  const server = app.listen(port);
+  if (server?.once) {
+    const timer = setInterval(cleanup, 15 * 60 * 1000);
+    timer.unref(); server.once('close', () => clearInterval(timer));
+  }
+  return server;
 }
 async function shutdownServer(server, prisma) {
   const deadline = setTimeout(() => server.closeAllConnections?.(), 10000);

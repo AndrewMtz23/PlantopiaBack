@@ -38,7 +38,7 @@ test('valid images are decoded and reencoded under generated names; oversized di
   const png = await sharp({ create: { width: 2, height: 3, channels: 3, background: '#228833' } }).png().toBuffer();
   const r = await upload().attach('image', png, { filename: '../../original.png', contentType: 'image/png' });
   assert.equal(r.status, 200);
-  assert.match(r.body.imagePath, /^\/uploads\/media\/product-[0-9a-f-]{36}\.webp$/);
+  assert.match(r.body.imagePath, /^\/uploads\/pending\/[0-9a-f-]{36}\.webp$/);
   const saved = await request(app).get(r.body.imagePath);
   assert.equal(saved.status, 200); assert.match(saved.headers['content-type'], /image\/webp/);
   const huge = await sharp({ create: { width: 5000, height: 4001, channels: 3, background: '#228833' } }).png().toBuffer();
@@ -73,4 +73,27 @@ test('aborted multipart requests leave no disk temporaries', async () => {
     });
     assert.equal(await fs.stat(process.env.UPLOAD_TEMP_PATH).then(() => true, () => false), false);
   } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+});
+test('standalone uploads expire unless a product successfully attaches them', async () => {
+  const png = await require('sharp')({ create: { width: 2, height: 2, channels: 3, background: '#228833' } }).png().toBuffer();
+  const response = await upload().attach('image', png, 'pending.png');
+  assert.match(response.body.imagePath, /^\/uploads\/pending\/[0-9a-f-]{36}\.webp$/);
+  const { withProductImages, pendingPath, cleanupPendingImages } = require('../src/infrastructure/storage/pendingImages');
+  const original = response.body.imagePath;
+  const media = path.join(process.env.UPLOADS_PATH, 'media');
+  const before = (await fs.readdir(media).catch(() => [])).sort();
+  await assert.rejects(withProductImages({ imagen: original }, async () => { throw new Error('database failed'); }));
+  assert.deepEqual((await fs.readdir(media)).sort(), before);
+  const file = pendingPath(original);
+  const expired = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  await fs.utimes(file, expired, expired);
+  await cleanupPendingImages(prisma);
+  assert.equal(await fs.stat(file).then(() => true, () => false), false);
+  assert.equal((await request(app).get(original)).status, 404);
+  const accepted = await upload().attach('image', png, 'saved.png');
+  const product = await request(app).post('/crearProducto').set('Authorization', `Bearer ${f.tokens[0]}`).send({ nombre: 'Saved image', categoria: 'Test', precioCompra: '10.00', precioVenta: '20.00', imagen: accepted.body.imagePath });
+  assert.equal(product.status, 201);
+  assert.match(product.body.imagen, /^\/uploads\/media\/product-/);
+  assert.equal((await request(app).get(product.body.imagen)).status, 200);
+  assert.equal((await request(app).get(accepted.body.imagePath)).status, 404);
 });
