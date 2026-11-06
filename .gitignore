@@ -23,3 +23,8 @@ Thumbs.db
 /src/generated/prisma
 /.pending-product-images/
 /uploads/media/
+
+# Local planning artifacts
+.superpowers/
+.plans/
+Documentacion/
