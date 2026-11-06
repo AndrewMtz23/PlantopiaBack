@@ -163,6 +163,7 @@ class UserService {
         genero: true,
         telefono: true,
         correo: true,
+        emailVerifiedAt: true,
         domicilio: true,
         ciudad: true,
         estadoDireccion: true,
@@ -185,11 +186,9 @@ class UserService {
 
     // Validaciones
     if (!nombre || String(nombre).trim().length < 3) throw new AppError(400, 'INVALID_INPUT', "El nombre debe tener al menos 3 caracteres.");
-    if (!fechaNacimiento) throw new AppError(400, 'INVALID_INPUT', "La fecha de nacimiento es obligatoria.");
-    if (!genero) throw new AppError(400, 'INVALID_INPUT', "Selecciona un genero valido.");
-    if (!telefono || String(telefono).replace(/\D/g, "").length < 10) throw new AppError(400, 'INVALID_INPUT', "El telefono debe tener al menos 10 digitos.");
+    if (telefono && String(telefono).replace(/\D/g, "").length < 10) throw new AppError(400, 'INVALID_INPUT', "El telefono debe tener al menos 10 digitos.");
     if (!normalizedEmail) throw new AppError(400, 'INVALID_INPUT', "El correo es obligatorio.");
-    if (!domicilio || String(domicilio).trim().length < 8) throw new AppError(400, 'INVALID_INPUT', "El domicilio debe tener al menos 8 caracteres.");
+    if (domicilio && String(domicilio).trim().length < 8) throw new AppError(400, 'INVALID_INPUT', "El domicilio debe tener al menos 8 caracteres.");
     if (normalizedPostalCode && (normalizedPostalCode.length < 5 || normalizedPostalCode.length > 10)) throw new AppError(400, 'INVALID_INPUT', "El codigo postal debe tener entre 5 y 10 digitos.");
 
     const existingUsers = await UserRepository.findAll({ where: { correo: normalizedEmail, id: { not: Number(userId) } } });

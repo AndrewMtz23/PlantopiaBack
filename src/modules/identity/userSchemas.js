@@ -4,10 +4,11 @@ function userSchema(value, { admin = false, create = false } = {}) {
   object(value, [...profileFields, ...(admin ? ['id', 'tipo', 'estatus'] : []), ...(admin || create ? ['clave'] : [])]);
   const out = { ...value };
   const limits = { nombre: [3, 45], fechaNacimiento: [10, 10], genero: [1, 20], domicilio: [8, 450], ciudad: [0, 120], estadoDireccion: [0, 120], codigoPostal: [0, 5], referenciasDomicilio: [0, 500] };
-  for (const [field, [min, max]] of Object.entries(limits)) out[field] = text(value[field], field, min, max, min === 0);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(out.fechaNacimiento) || Number.isNaN(Date.parse(out.fechaNacimiento))) invalid('fechaNacimiento');
-  out.telefono = text(value.telefono, 'telefono', 10, 10);
-  if (!/^\d{10}$/.test(out.telefono)) invalid('telefono');
+  for (const [field, [min, max]] of Object.entries(limits)) out[field] = text(value[field], field, min, max, min === 0 || ['fechaNacimiento', 'genero', 'domicilio'].includes(field));
+  if (out.fechaNacimiento && (!/^\d{4}-\d{2}-\d{2}$/.test(out.fechaNacimiento) || Number.isNaN(Date.parse(out.fechaNacimiento)))) invalid('fechaNacimiento');
+  if (out.fechaNacimiento && (out.fechaNacimiento.startsWith('0000-') || new Date(out.fechaNacimiento).toISOString().slice(0, 10) !== out.fechaNacimiento)) invalid('fechaNacimiento');
+  out.telefono = text(value.telefono, 'telefono', 10, 10, true);
+  if (out.telefono && !/^\d{10}$/.test(out.telefono)) invalid('telefono');
   out.correo = text(value.correo, 'correo', 3, 254).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out.correo)) invalid('correo');
   if (out.codigoPostal && !/^\d{5}$/.test(out.codigoPostal)) invalid('codigoPostal');

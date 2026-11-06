@@ -22,8 +22,6 @@ const validateLoginPayload = ({ correo, clave }) => {
 const validateUserPayload = ({
   nombre,
   clave,
-  fechaNacimiento,
-  genero,
   telefono,
   correo,
   domicilio,
@@ -36,23 +34,15 @@ const validateUserPayload = ({
     return "La contrasena debe tener al menos 8 caracteres.";
   }
 
-  if (!fechaNacimiento) {
-    return "La fecha de nacimiento es obligatoria.";
-  }
-
-  if (!genero) {
-    return "Selecciona un genero valido.";
-  }
-
-  if (!telefono || !PHONE_REGEX.test(String(telefono).replace(/\D/g, ""))) {
-    return "El telefono debe contener entre 10 y 15 digitos.";
+  if (telefono && !PHONE_REGEX.test(String(telefono).replace(/\D/g, ""))) {
+    return "El telefono debe contener 10 digitos.";
   }
 
   if (!correo || !EMAIL_REGEX.test(normalizeEmail(correo))) {
     return "Ingresa un correo electronico valido.";
   }
 
-  if (!domicilio || String(domicilio).trim().length < 8) {
+  if (domicilio && String(domicilio).trim().length < 8) {
     return "El domicilio debe tener al menos 8 caracteres.";
   }
 
